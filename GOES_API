@@ -1,0 +1,874 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Mon Sep 14 15:07:38 2020
+
+@author: ghiggi
+"""
+import os 
+
+os.chdir('/home/ghiggi/gpm_api')
+
+import s3fs
+import numpy as np
+import tqdm
+import netCDF4 
+import xarray as xr
+import matplotlib.pyplot as plt
+import cartopy
+import cartopy.crs as ccrs
+import pandas as pd 
+import datetime
+from datetime import timedelta
+from gpm_api.utils.utils_string import str_extract
+from gpm_api.utils.utils_string import str_subset
+from gpm_api.utils.utils_string import str_sub 
+from gpm_api.utils.utils_string import str_pad 
+from gpm_api.utils.utils_string import str_detect
+from gpm_api.utils.utils_string import subset_list_by_boolean
+
+##----------------------------------------------------------------------------.      
+    
+def get_products_abi_l1b():
+    products = ['ABI-L1b-Rad']
+    return products 
+ 
+
+def get_products_abi_l2():
+    products = ['ABI-L2-ACHA',                   
+                'ABI-L2-ACHT',
+                'ABI-L2-ACM',
+                'ABI-L2-ACTP',
+                'ABI-L2-ADP',
+                'ABI-L2-AOD',
+                'ABI-L2-CMIP',
+                'ABI-L2-COD',
+                'ABI-L2-CPS',
+                'ABI-L2-CTP',                   
+                'ABI-L2-DMW',
+                'ABI-L2-DSI',
+                'ABI-L2-DSR',
+                'ABI-L2-FDC',
+                'ABI-L2-LST',
+                'ABI-L2-LVMP',
+                'ABI-L2-LVTP',
+                'ABI-L2-MCMIP',
+                'ABI-L2-RRQPE',
+                'ABI-L2-RSR',
+                'ABI-L2-SST',
+                'ABI-L2-TPW',                   
+                'ABI-L2-VAA'] 
+    return products 
+
+def get_products_glm_l2():
+    products = ['GLM-L2-LCFA']
+    return products
+
+def get_products_suvi_l1b():
+    """For potential use with sunpy. 
+    
+    https://github.com/sunpy/sunpy/blob/master/examples/acquiring_data/querying_the_GOES_event_list.py
+    """
+    products = ['SUVI-L1b-Fe093',
+                'SUVI-L1b-Fe13',
+                'SUVI-L1b-Fe131',
+                'SUVI-L1b-Fe17',
+                'SUVI-L1b-Fe171',
+                'SUVI-L1b-Fe195',
+                'SUVI-L1b-Fe284',
+                'SUVI-L1b-He303']
+    return products
+
+def get_readers(): 
+    readers = ['abi_l1b', 'abi_l2', 'glm_l2', 'suvi_l1b']
+    return readers
+
+def get_scan_modes():
+    scan_modes = ["M3","M4","M6"]
+    return scan_modes 
+
+def get_satellites():
+    satellites = ["goes16","goes17"]
+    return satellites
+
+def get_sectors():
+    sectors = ['FULL_DISK', 'CONUS', 'M1', 'M2']
+    return sectors
+
+def get_channels():
+    channels = ['C{:02d}'.format(x) for x in range(1, 17)]
+    return channels 
+
+def get_products(reader):
+    # Check valid reader
+    check_reader(reader)
+    # Get products list
+    if (reader == 'abi_l1b'):
+        return get_products_abi_l1b()
+    elif (reader == 'abi_l2'):
+        return get_products_abi_l2()
+    elif (reader == 'glm_l2'):
+        return get_products_glm_l2()
+    elif (reader == 'suvi_l1b'):
+        return get_products_suvi_l1b()
+    else:
+        raise ValueError("BUG. This should not occur")
+
+def get_AWS_base_url(server_type, satellite):
+    if server_type == 's3':
+        base_url = 's3://noaa-' + satellite
+    else: # https or http
+        base_url = server_type + '://noaa-' + satellite + '.s3.amazonaws.com'
+    return base_url
+
+def get_s3_filepaths(satellite, product_prefix, timepath):
+    # Retrieve S3 base url 
+    s3_base_url = get_AWS_base_url(server_type="s3", satellite=satellite)
+    url = s3_base_url + "/" + product_prefix + "/" + timepath
+    # Use the anonymous credentials to access S3 public data
+    fs = s3fs.S3FileSystem(anon=True) # accessing all public buckets. 
+    try: 
+        filenames = fs.ls(url) # this is not filenames !
+        # filenames = ['s3://' + filename for filename in filenames] 
+    except:    
+        filenames = []
+    return filenames     
+
+def get_disk_base_path(base_DIR, satellite):
+    base_path = os.path.join(base_DIR, satellite.upper())
+    return base_path
+
+def get_disk_filepaths(base_DIR, satellite, product_prefix, timepath):
+    folder_path = os.path.join(base_DIR, satellite.upper(), product_prefix, timepath)
+    filenames = os.listdir(folder_path)
+    return filenames   
+
+def get_idx_within_range(s_a, e_a, start, end):
+    # Return index of elements included in start-end range
+    idx_select1 = np.logical_and(s_a <= start, e_a > start) # first granule
+    idx_select2 = np.logical_and(s_a >= start, s_a < end) # all the rest
+    idx_select = np.logical_or(idx_select1, idx_select2)
+    return(idx_select)
+
+#----------------------------------------------------------------------------.
+################
+#### Checks ####
+################
+def not_in(list1, list2):
+    # Test wheter list1 element are not in list2
+    return [elem not in list2 for elem in list1]
+
+def check_reader(reader):
+    if not isinstance(reader, str):
+        raise TypeError('Provide reader name as a string')
+    if (reader not in get_readers()):
+        raise ValueError("Specify a valid reader! --> get_readers()")
+
+def check_sector(sector):
+    if not isinstance(sector, str):
+        raise TypeError('Provide sector name as a string')
+    if (sector not in get_sectors()):
+        raise ValueError("Specify a valid reader! --> get_sectors()")
+
+def check_satellite(satellite):
+    if not isinstance(satellite, str):
+        raise TypeError('Provide satellite name as a string')
+    if (satellite not in get_satellites()):
+        raise ValueError("Specify a valid satellite name! --> get_satellites()")
+
+def check_AWS_connection(AWS_connection):
+    if not isinstance(AWS_connection, str):
+        raise TypeError('Provide AWS_connection name as a string')
+    if (AWS_connection not in ['https','http', 's3']):
+        raise ValueError("Specify a valid AWS_connection. Either https, http or s3")   
+
+def check_scan_modes(scan_modes):
+    if scan_modes is None:
+        return 
+    if isinstance(scan_modes, str):
+        scan_modes = [scan_modes]
+    if any(not_in(scan_modes, get_scan_modes())):
+        raise ValueError("Provide valid scan_modes names! --> get_scan_modes()")
+
+def check_channels(channels):
+    if channels is None:
+        return 
+    if isinstance(channels, str):
+        channels = [channels]
+    if any(not_in(channels, get_channels())):
+        raise ValueError("Provide valid channels names! --> get_channel()")
+ 
+def check_products(products, reader, sector):
+    # If products are not specified, retrieve all 
+    if (products is None):
+        products = get_products(reader=reader)
+    # If product are specified, silently convert to list if string
+    if isinstance(products, str):
+        products = [products]
+    # Check that all specified products are valid 
+    if any(not_in(products, get_products(reader=reader))):
+        raise ValueError('Specify valid', reader,' products !')     
+    ##------------------------------------------------------------------------. 
+    # Special check for ABI L2 products
+    if (reader == 'abi_l2'):
+        if (sector == 'FULL_DISK'):
+            not_valid_products = ''
+        elif (sector in ['M1', 'M2']):
+            not_valid_products = ['AOD', 'COD', 'CTP', 'FDC', 'RSR', 'SST', 'VAA', 'RRQPE']
+        else: # sector ==  CONUS   
+            not_valid_products = ['ACHT', 'SST', 'VAA', 'RRQPE']
+        #---------------------------------------------------------------------.
+        # Check "exeception" products for CONUS and Mesoscale                
+        idx_valid = not_in(products, not_valid_products)
+        if not all(idx_valid): 
+            idx_not_valid = np.logical_not(idx_valid)
+            if (all(idx_not_valid)):
+                raise ValueError('All ABI L2 products specified are not valid')
+            else:
+                # Silently remove those which are not valid 
+                products = list(np.array(products)[idx_valid]) 
+        # Check that there are still some variables to retrieve
+        if (len(products) == 0):
+            raise ValueError('No valid ABI L2 products to retrieve')
+    ##------------------------------------------------------------------------. 
+    return products            
+
+def check_Datetime(Datetime):
+    if not isinstance(Datetime, (datetime.datetime, datetime.date)):
+        raise ValueError("Please provide a datetime object")
+    if not isinstance(Datetime, datetime.datetime):
+        Datetime = datetime.datetime(Datetime.year, Datetime.month, Datetime.day,0,0,0)
+    return(Datetime)
+
+def check_start_end_time(start_time, end_time):
+    start_time = check_Datetime(start_time)
+    end_time = check_Datetime(end_time)
+    # Check start_time and end_time are chronological  
+    if (start_time > end_time):
+        raise ValueError('Provide start_time occuring before of end_time') 
+    # Check start_time and end_time are in the past
+    if (start_time > datetime.datetime.now()):
+        raise ValueError('Provide a start_time occuring in the past') 
+    if (end_time > datetime.datetime.now()):
+        raise ValueError('Provide a end_time occuring in the past') 
+    return (start_time, end_time)
+
+def check_base_DIR(base_DIR):
+    if (base_DIR is not None):
+        if not os.path.exists(base_DIR):
+            raise ValueError("The path", base_DIR, 'does not exist on disk')
+        if not os.path.isdir(base_DIR):
+            raise ValueError(base_DIR, 'is not a folder path')
+            
+def is_not_empty(x):
+    return(not not x)
+
+def is_empty(x):
+    return( not x)
+#-----------------------------------------------------------------------------.
+def granules_time_info(filepaths):
+    """
+    Retrieve the Date, start_HHMMSS and end_HHMMSS of granules.
+
+    Parameters
+    ----------
+    filepaths : list, str
+        Filepath or filename of a GOES-R netCDF4 file.
+
+    Returns
+    -------
+    Date: list
+        List with the Date of each granule.
+    start_time : list
+        List with the start_HHMMSS of each granule.
+    end_time : list
+        List with the end_HHMMSS of each granule.
+
+    """
+    # Extract filename from filepath (and be sure is a list)
+    if isinstance(filepaths,str):
+        filepaths = [filepaths]
+    filenames = [os.path.basename(filepath) for filepath in filepaths]
+    # - Retrieve start_HHMMSS and endtime 
+    l_start = str_sub(str_extract(filenames,"_s[0-9]{14}"), start=2, end=15)
+    l_end = str_sub(str_extract(filenames,"_e[0-9]{14}"), start=2, end=15)
+    # l_start_HHMMSS = str_sub(l_start, start=7, end = 13)
+    # l_end_HHMMSS = str_sub(l_end, start=7, end=13)     
+    return (l_start, l_end)
+
+def add_ABI_sector_suffix(products, sector, filename=False): 
+    if isinstance(products, str):
+        products = [products]
+    if (sector == 'FULL_DISK'):
+        products = [product + "F" for product in products]
+    elif (sector == 'CONUS'):
+        products = [product + "C" for product in products]
+    elif ((sector in ['M1','M2']) and (filename is False)):
+        products = [product + "M" for product in products]      
+    elif (sector == 'M1'):
+        products = [product + "M1" for product in products]
+    elif (sector == 'M2'):
+        products = [product + "M1" for product in products]   
+    else:
+        raise ValueError("BUG. This should not occur")
+    return products 
+
+def subset_by_time(filenames, start_time, end_time): 
+    # Retrieve granule start and end time
+    l_s, l_e = granules_time_info(filenames)
+    s_a = np.array(l_s).astype(np.int64)  # to integer 
+    e_a = np.array(l_e).astype(np.int64)  # to integer 
+    # Format absolute start_time and end_time 
+    start = int(start_time.strftime('%Y%j%H%M%S'))
+    end = int(end_time.strftime('%Y%j%H%M%S'))
+    # Subset filepaths based on start and end time 
+    idx_select = get_idx_within_range(s_a, e_a, start, end)
+    filenames = list(np.array(filenames)[idx_select])
+    return filenames
+
+def subset_by_scan_modes(filenames, product, scan_modes):
+    if (product == 'ABI-L1b-Rad'):
+        modes = str_sub(str_extract(filenames,"-M[0-9]{1}C[0-9]{2}_G"), start=1, end=3)
+    else: 
+        modes = str_sub(str_extract(filenames,"-M[0-9]{1}_G"), start=1, end=3)
+    idx_select = np.isin(np.array(modes), scan_modes)
+    filenames = list(np.array(filenames)[idx_select])
+    return filenames
+
+def subset_by_channels(filenames, channels):
+    chs = str_sub(str_extract(filenames,"-M[0-9]{1}C[0-9]{2}"), start=3, end=6) 
+    idx_select = np.isin(np.array(chs), channels)
+    filenames = list(np.array(filenames)[idx_select])
+    return filenames
+
+def subset_by_sector(filenames, sector, product):
+    # Define filename product  
+    product_name = add_ABI_sector_suffix(product, sector=sector, filename=True)[0]
+    idx_select = str_detect(filenames, product_name)
+    filenames = list(np.array(filenames)[idx_select])
+    return filenames
+            
+#----------------------------------------------------------------------------.
+def find_filepaths(reader,
+                   satellite, 
+                   start_time, 
+                   end_time,
+                   products = None,
+                   scan_modes = None,  
+                   channels = None,
+                   sector = "FULL_DISK", 
+                   base_DIR = None,
+                   AWS_connection = "https",
+                   mode_byte = True,
+                   output_tuple = False):
+    # ["M3","M4","M6"]
+    #  F= Full Disk, M1 = mesoscale 1, M2 = mesoscale 2, C = CONUS
+    # sector (optional --> Full disk )
+    # product (optional --> All) 
+    # channels (optional --> All) # for abi_l1b  
+    # AWS_connection = "https","s3","base_DIR", None 
+    # base_DIR only if data where downloaded 
+    ##------------------------------------------------------------------------.
+    # Checks 
+    check_reader(reader)
+    check_sector(sector)
+    check_satellite(satellite)
+    check_scan_modes(scan_modes)
+    check_channels(channels)
+    check_AWS_connection(AWS_connection)
+    check_base_DIR(base_DIR=base_DIR)
+    start_time, end_time = check_start_end_time(start_time, end_time)
+    products = check_products(products, reader=reader, sector = sector)
+    #-------------------------------------------------------------------------.
+    # Checks to output a tuple (AWS path, disk path )
+    if (output_tuple is True) and (base_DIR is None):
+        raise ValueError("If output_tuple is True, base_DIR must be specified")
+    ##------------------------------------------------------------------------.
+    # Search also in previous hour folder to avoid missing some data ...
+    start_time = start_time - datetime.timedelta(hours = 1)
+    # Retrieve "time" folder paths into which search for data
+    list_DateTime = pd.date_range(start=start_time, end=end_time, freq='H')
+    list_timepaths = list_DateTime.strftime('%Y/%j/%H').to_list()
+    n_t = len(list_timepaths)
+    #---------------------------------------------------------------------.
+    ## Loop over products and timesteps
+    # Initialize filepaths 
+    all_filepaths = []
+    all_disk_filepaths = []
+    for product in products:
+        #---------------------------------------------------------------------. 
+        # Define the product prefix 
+        if (reader in ['abi_l1b', 'abi_l2']):
+            product_prefix = add_ABI_sector_suffix(product, sector=sector)[0]
+        else: 
+            product_prefix = product
+        #---------------------------------------------------------------------. 
+        for i, timepath in enumerate(list_timepaths):  
+            #-----------------------------------------------------------------.
+            # Retrieve filepaths
+            if (base_DIR is None) or (output_tuple is True):
+                filepaths = get_s3_filepaths(satellite = satellite,
+                                             product_prefix = product_prefix, 
+                                             timepath = timepath)   
+            else:
+                filepaths = get_disk_filepaths(base_DIR = base_DIR, 
+                                               satellite = satellite, 
+                                               product_prefix = product_prefix, 
+                                               timepath = timepath)
+            #-----------------------------------------------------------------.
+            # Skip to next folder if no data available
+            if (is_empty(filepaths)):
+                print("No", product, "available on", datetime.datetime.strptime(timepath,'%Y/%j/%H'))
+                continue
+            #-----------------------------------------------------------------.
+            # Subset radiance channels if specified 
+            if (channels is not None) and (product == 'ABI-L1b-Rad'):
+                filepaths = subset_by_channels(filepaths, channels) 
+            #-----------------------------------------------------------------.
+            # Subset by scan_modes    
+            # - Either a str or a list of valid scan_modes
+            if (scan_modes is not None) and (reader in ['abi_l1b', 'abi_l2']):
+                filepaths = subset_by_scan_modes(filenames = filepaths, 
+                                                 product = product, 
+                                                 scan_modes = scan_modes)
+            #-----------------------------------------------------------------.
+            # Subset by sector    
+            if (sector in ['M1','M2']) and (reader in ['abi_l1b', 'abi_l2']):
+                filepaths = subset_by_sector(filenames = filepaths, 
+                                             sector = sector,
+                                             product = product)
+            #-----------------------------------------------------------------.
+            # Subsetting sub-hourly data (first, second and last iteration)
+            if (i in [0, 1, n_t]):
+                filepaths = subset_by_time(filenames = filepaths, 
+                                           start_time = start_time,
+                                           end_time = end_time)
+            #-----------------------------------------------------------------.
+            # Format the filepaths for special AWS connection if requested
+            if (AWS_connection in ["https", "http"]):
+                base_url = get_AWS_base_url(server_type = AWS_connection,
+                                            satellite = satellite)
+                base_path = base_url + "/" + product_prefix + "/" + timepath + "/"
+                filepaths = [base_path + "/" + os.path.basename(filepath) for filepath in filepaths]
+                # Add #mode=bytes for netCDF4 direct access via https
+                if (mode_byte is True):
+                    filepaths = [filepath + "#mode=bytes" for filepath in filepaths]
+            #-----------------------------------------------------------------.
+            # Define also filepaths on disk (for download)
+            if (output_tuple is True):
+                disk_base_path = get_disk_base_path(base_DIR=base_DIR, satellite=satellite)
+                disk_folder_path = os.path.join(disk_base_path, product_prefix, timepath)
+                # Create the necessary directories
+                if not os.path.exists(disk_folder_path):
+                    os.makedirs(disk_folder_path)
+                # Define all filepaths
+                disk_filepaths = [os.path.join(disk_folder_path, os.path.basename(filepath)) for filepath in filepaths]
+                # Attach to existing ones
+                all_disk_filepaths.extend(disk_filepaths)
+            #-----------------------------------------------------------------.
+            # Attach filepaths to existing ones
+            all_filepaths.extend(filepaths)
+    #-------------------------------------------------------------------------.
+    # Return filepaths
+    if (output_tuple is True):
+        return (all_filepaths, all_disk_filepaths)  
+    else: 
+        return (all_filepaths)
+    
+def download(base_DIR, 
+             reader,
+             satellite,
+             start_time,
+             end_time,
+             sector = 'FULL_DISK', 
+             scan_modes = None,  
+             products = None, 
+             channels = None,
+             force_download = False, 
+             AWS_connection = "s3"):   
+    #-------------------------------------------------------------------------.    
+    # Retrieve filepaths 
+    s3_filepaths, disk_filepaths = find_filepaths(base_DIR = base_DIR, 
+                                                  reader = reader,
+                                                  products = products, 
+                                                  satellite = satellite,
+                                                  start_time = start_time,
+                                                  end_time = end_time,
+                                                  sector = sector, 
+                                                  scan_modes = scan_modes,  
+                                                  channels = channels,
+                                                  AWS_connection = AWS_connection,
+                                                  output_tuple = True,
+                                                  mode_byte = False)
+    
+    #-------------------------------------------------------------------------.
+    # Decide if to redownload data already present on disk 
+    if (force_download is True):
+        ## Remove already existing files on disk from the filepath list 
+        idx_not_exist = [not os.path.exists(filepath) for filepath in disk_filepaths]
+        disk_filepaths = list(np.array(disk_filepaths)[idx_not_exist]) 
+        s3_filepaths = list(np.array(s3_filepaths)[idx_not_exist]) 
+    #-------------------------------------------------------------------------.
+    # Download data 
+    
+    
+    
+    
+#----------------------------------------------------------------------------.
+
+
+ 
+ 
+    
+
+
+
+
+base_DIR = "/home/ghiggi/tmp"
+base_DIR = None 
+sector = 'FULL_DISK'
+satellite = "goes16"
+start_time = datetime.datetime.strptime("2020-08-09 15:00:00", '%Y-%m-%d %H:%M:%S')
+end_time = datetime.datetime.strptime("2020-08-09 16:00:00", '%Y-%m-%d %H:%M:%S')
+
+start_time = datetime.datetime(2020,8,9,15,0,0)
+end_time = datetime.datetime(2020,8,9,15,30,0)
+
+channels = ['C01', 'C02']
+sector = "FULL_DISK"
+sector = 'M1'
+scan_modes = None
+scan_modes = 'M6'
+channels = None
+channels = ['C01', 'C02']
+AWS_connection = 'https'
+
+products = ['ABI-L2-ACHA', 
+            'ABI-L2-ACHT',
+            'ABI-L2-ACM']
+
+reader = 'abi_l2'
+products = 'ABI-L2-ACHA'
+products = None
+
+reader = 'abi_l1b'
+products = 'ABI-L1b-Rad'
+
+reader = 'glm_l2'
+products = 'GLM-L2-LCFA'
+
+
+reader = "suvi_l1b"
+products = None
+ 
+# Retrieve filepaths 
+filepaths = find_filepaths(base_DIR = None, 
+                           reader = reader,
+                           products = products, 
+                           satellite = satellite,
+                           start_time = start_time,
+                           end_time = end_time,
+                           sector = sector, 
+                           scan_modes = scan_modes,  
+                           channels = channels,
+                           AWS_connection = AWS_connection)
+  
+# Retrieve filepaths 
+base_DIR = "/home/ghiggi/tmp"
+s3_filepaths, disk_filepaths = find_filepaths(base_DIR = base_DIR, 
+                                              reader = reader,
+                                              products = products, 
+                                              satellite = satellite,
+                                              start_time = start_time,
+                                              end_time = end_time,
+                                              sector = sector, 
+                                              scan_modes = scan_modes,  
+                                              channels = channels,
+                                              AWS_connection = "s3",
+                                              output_tuple = True)
+
+
+import multiprocessing 
+from tqdm import tqdm
+
+## Download via s3fs 
+def initialize_s3():
+  global s3_fs
+  s3_fs = s3fs.S3FileSystem(anon=True) # accessing all public buckets.    
+  
+def s3_download(tuple_path):
+    s3_filepath, disk_filepath = tuple_path
+    s3_fs.get(s3_filepath, disk_filepath)
+
+def s3_downloads(s3_filepaths, disk_filepaths):
+    # Make a process pool to do the work
+    list_tuple_paths = list(zip(s3_filepaths, disk_filepaths))
+    # Initialize S3 in each processor 
+    pool = multiprocessing.Pool(min(multiprocessing.cpu_count(), len(list_tuple_paths)),
+                                initialize_s3)
+    # Run download 
+    pool.map(s3_download, list_tuple_paths)
+    
+    # Close processors
+    pool.close()
+    pool.join()
+
+
+# Download via boto3 
+
+
+
+
+# Download via https 
+
+
+# bucket = 'noaa-goes16'
+# bucket = 'noaa-goes17'
+ 
+# awsgoesfile.key
+# filepath
+
+# s3.download_file(bucket, awsgoesfile.key, filepath)
+
+## To reduce bandwidth usage, reduce max_concurrency 
+#          to increase usage, increase max_concurrency
+# Threads to implement concurrency
+max_concurrency=5
+config = TransferConfig(use_threads=True,
+                        max_concurrency = max_concurrency)
+
+
+
+# Download an S3 object
+s3 = boto3.client('s3')
+s3.download_file('BUCKET_NAME', 'OBJECT_NAME', 'FILE_NAME', Config=config)
+ 
+## boto3 _download_file 
+s3_client = boto3.resource('s3')
+my_bucket = s3_client.Bucket(bucket_name)
+my_bucket.download_file(key, filename)
+ 
+s3_client = boto3.client('s3')
+s3_client.download_file(bucket_name, key, filename)
+ 
+
+# Resources 
+# - High level service class
+# - High level clients are not thread safe.
+# - Initiate a client in each thread
+s3 = boto3.resource('s3') 
+
+# Client
+# - Low-level service class
+# - Low level clients are thread safe. 
+# - When using a low-level client, it is recommended to instantiate your client 
+#   then pass that client object to each of your threads.
+s3 = boto3.client('3')
+s3 = boto3.resource('s3')
+            
+# Customized Session 
+# - Initiate AWS connectivity
+session = boto3.session.Session()
+s3 = session.resource('s3') 
+s3 = session.client('3')
+s3 = session.resource('s3')
+
+
+                  
+from concurrent import futures
+
+def fetch_all(keys):
+    with futures.ThreadPoolExecutor(max_workers=5) as executor:
+        future_to_key = {executor.submit(my_fun, key): key for key in keys}
+
+        print("All URLs submitted.")
+
+        for future in futures.as_completed(future_to_key):
+
+            key = future_to_key[future]
+            exception = future.exception()
+
+            if not exception:
+                yield key, future.result()
+            else:
+                yield key, exception
+
+for key, result in fetch_all(S3_OBJECT_KEYS):
+    print(f'key: {key}  result: {result}')
+
+concurrent.futures.ThreadPoolExecutor(max_workers=threads) as executor:
+             future_download = {executor.submit(
+for future in concurrent.futures.as_completed(future_download):
+    try:
+        result = future.result()
+        localfiles.append(result)
+        print("Downloaded {}".format(result.filename))
+    except GoesAwsDownloadError:
+        error = future.exception()
+        errors.append(error.awsgoesfile)
+    
+    
+import logging
+
+logging.basicConfig(filename="s3_download.log", level=logging.INFO)
+logging.info("Creating a pool")
+
+ 
+ # s3 region name 
+    
+ # Important to note that list_objects() & list_objects_v2 only return up
+ #   to 1000 keys. V2 returns a ContinuationToken that can be used to get
+ #   the rest of the keys.
+
+            
+# https://github.com/mnichol3/goesaws/blob/master/goesaws/goesawsinterface.py 
+
+start = time.time()
+end = time.time()
+print('Time taken in seconds -', end - start)
+ 
+benchmarks = []
+benchmarks.append(timeit.Timer('serial(x_2Dgauss, point_x, widths)',
+      'from __main__ import serial, x_2Dgauss, point_x, widths').timeit(number=1)
+                  
+ 
+# Return a list of filepaths which failed to download
+# list filepaths which failed to download
+
+## for each product, satellite 
+
+# get_available_year
+# get_available_doy (specify year)
+# get_available_days (specify year)
+# get_available_hours (specify hours)
+# get_granules_s_e   (specify hours facultative) 
+ 
+
+
+## Testing
+# bucket_check --> base_url_paths
+# product_check --> all listed
+  
+# list_objects_v2 vs .ls 
+
+
+
+
+
+
+
+
+
+##----------------------------------------------------------------------------.
+filepath = filepaths[0]
+
+
+import xarray as xr
+ds = xr.open_dataset(filepath, chunks='auto') # lazy loading
+
+ds
+ds.attrs['title']
+ds.attrs['spatial_resolution']
+
+
+##----------------------------------------------------------------------------.
+import satpy
+from satpy import Scene, MultiScene
+
+scn = Scene(reader=reader, filenames=[filepaths[0]])
+scn.available_dataset_names(composites=True)
+scn.load(['C04'])
+scn.show('C01')
+
+ds = scn.to_xarray_dataset()
+
+##----------------------------------------------------------------------------.
+scn = Scene(reader=reader, filenames=[disk_filepaths[0]])
+scn.available_dataset_names(composites=True)
+scn.load(['C01'])
+scn.show('C01')
+
+# # AWS protocol --> Instead of connection
+# folder_path --> dir_path 
+# base_DIR --> base_dir 
+# get_AWS_base_url --> get_AWS_bucket_url
+# get_s3_filepaths --> list_s3_filepaths
+
+
+# get to available_ 
+# get_ to retrieve from filename  
+
+# doy
+Datetime.timetuple().tm_yday()
+Datetime.strftime('%j')
+
+## DOCS 
+# https://docs.opendata.aws/noaa-goes16/cics-readme.html
+
+# The L1b Radiances and L2 Cloud and Moisture Imagery have separate files for each of the 16 bands.
+# 'ABI-L2-MCMIPC
+# 'ABI-L1b-RadC',
+
+# Full disk scans are available every 15 minutes
+# CONUS scans are available every 5 minutes
+# Mesoscale scans are available every minute
+
+# M3: is mode 3 (scan operation),
+# M4 is mode 4 (only full disk scans every five minutes – no mesoscale or CONUS)
+## https://www.goes-r.gov/users/abiScanModeInfo.html 
+# https://www.youtube.com/watch?v=qCAPwgQR13w&ab_channel=NOAASatellites
+# Mode 3 
+# - Till April 2, 2019 
+# - FULL DISK every 15 minutes 
+# - CONUS every 5 minutes
+
+# Mode 3 Cooling Time (just for GOES-17 some periods of the year)
+# --> M1 and M2 every 2 minutes
+# --> CONUS not scanned 
+
+# Mode 6 (difference between GOES-16  and GOES-17)
+# - Since  April 2, 2019 
+# - FULL DISK every 10 minutes 
+# - CONUS every 5 minutes
+
+# Mode 4 
+# - Continuous 5-minute full disk imagery 
+# - No mesoscale and CONUS produced 
+# - October 1 2018
+# --> Useful to test TIMEFRAME INTERPOLATION vs. OBSERVED
+
+
+fs.ls('s3://noaa-goes16/')
+
+fs.ls('s3://noaa-goes16/ABI-L1b-RadM/2019/258/20')
+fs.ls('s3://noaa-goes16/ABI-L2-MCMIPM/2019/258/20')
+ 
+fs.ls('s3://noaa-goes16/GLM-L2-LCFA/2019/258/20')
+
+resp = requests.get(f"{BASE_URL}/exchanges")
+folder_name = resp.json()  ### http file list 
+
+## https://pymotw.com/3/
+
+### DOCS 
+# https://docs.opendata.aws/noaa-goes16/cics-readme.html
+# https://docs.opendata.aws/noaa-goes16/cics-readme.html
+
+## dictionaries are so much faster than looping over a list 
+# name with '0', '1', '2', '3'
+
+# https://docs.python.org/3/library/collections.html
+
+## IDE Sublime Text 
+
+## Improved debugger
+## pdbpp 
+## conda install -c conda-forge pdbpp 
+
+# https://docs.python.org/3/library/pickle.html
+# https://pymotw.com/2/pickle/index.html 
+
+# https://realpython.com/learning-paths/python-concurrency-parallel-programming/
+# https://realpython.com/learning-paths/test-your-python-apps/
+# https://realpython.com/learning-paths/writing-pythonic-code/
+# https://realpython.com/tutorials/all/
