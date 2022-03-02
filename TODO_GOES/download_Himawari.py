@@ -5,6 +5,9 @@ Created on Tue Jul 14 16:16:35 2020
 
 @author: ghiggi
 """
+# # https://noaa-himawari8.s3.amazonaws.com/index.html
+
+
 ## Inspired from https://github.com/zxdawn/weather_data/tree/master/H8
 # Xin Zhang
 
