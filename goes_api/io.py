@@ -11,6 +11,7 @@ import datetime
 import numpy as np
 import pandas
 from trollsift import Parser
+from .utils.time import _dt_to_year_doy_hour
 
 ####--------------------------------------------------------------------------.
 #### Alias
@@ -33,12 +34,30 @@ _channels = {
     "C05": ["C05", "5", "05", "1.6", "SNOW/ICE"],
     "C06": ["C06", "6", "06", "2.2", "CLOUD PARTICLE SIZE", "CPS"],
     "C07": ["C07", "7", "07", "3.9", "IR SHORTWAVE WINDOW", "IR SHORTWAVE"],
-    "C08": ["C08", "8", "08", "6.2", "UPPER-LEVEL TROPOSPHERIC WATER VAPOUR",
-            "UPPER-LEVEL WATER VAPOUR"],
-    "C09": ["C09", "9", "09", "6.9", "MID-LEVEL TROPOSPHERIC WATER VAPOUR",
-            "MID-LEVEL WATER VAPOUR"],
-    "C10": ["C10", "10", "10", "7.3", "LOWER-LEVEL TROPOSPHERIC WATER VAPOUR",
-            "LOWER-LEVEL WATER VAPOUR"],
+    "C08": [
+        "C08",
+        "8",
+        "08",
+        "6.2",
+        "UPPER-LEVEL TROPOSPHERIC WATER VAPOUR",
+        "UPPER-LEVEL WATER VAPOUR",
+    ],
+    "C09": [
+        "C09",
+        "9",
+        "09",
+        "6.9",
+        "MID-LEVEL TROPOSPHERIC WATER VAPOUR",
+        "MID-LEVEL WATER VAPOUR",
+    ],
+    "C10": [
+        "C10",
+        "10",
+        "10",
+        "7.3",
+        "LOWER-LEVEL TROPOSPHERIC WATER VAPOUR",
+        "LOWER-LEVEL WATER VAPOUR",
+    ],
     "C11": ["C11", "11", "11", "8.4", "CLOUD-TOP PHASE", "CTP"],
     "C12": ["C12", "12", "12", "9.6", "OZONE"],
     "C13": ["C13", "13", "10.3", "CLEAN IR LONGWAVE WINDOW", "CLEAN IR"],
@@ -48,9 +67,16 @@ _channels = {
 }
 
 PROTOCOLS = ["gcs", "s3", "local", "file"]
+BUCKET_PROTOCOLS = ["gcs", "s3"]
 
 ####--------------------------------------------------------------------------.
 #### Availability
+
+
+def available_protocols():
+    return BUCKET_PROTOCOLS
+
+
 def available_sensors():
     from goes_api.listing import PRODUCTS
 
@@ -62,10 +88,17 @@ def available_satellites():
 
 
 def available_sectors(product=None):
+    from goes_api.listing import ABI_L2_SECTOR_EXCEPTIONS
+
+    sectors_keys = list(_sectors.keys())
     if product is None:
-        return list(_sectors.keys())
-    # TODO
-    raise NotImplementedError()
+        return sectors_keys
+    else:
+        specific_sectors = ABI_L2_SECTOR_EXCEPTIONS.get(product)
+        if specific_sectors is None:
+            return sectors_keys
+        else:
+            return specific_sectors
 
 
 def available_product_levels(sensors=None):
@@ -109,9 +142,30 @@ def available_products(sensors=None, product_levels=None):
     return _get_products(sensors=sensors, product_levels=product_levels)
 
 
+def available_group_keys(sensor=None, product_levels=None):
+    group_keys = [
+        "system_environment",
+        "sensor",  # ABI
+        "product",  # ...
+        "scene_abbr",  # ["F", "C", "M1", "M2"]
+        "scan_mode",  # ["M3", "M4", "M6"]
+        "channel",  # C**
+        "platform_shortname",  # G16, G17
+        "start_time",
+        "end_time",
+    ]
+    return group_keys
+
+
+def available_connection_types():
+    return ["bucket", "https", "nc_bytes"]
+
+
 ####--------------------------------------------------------------------------.
-####
-def check_protocol(protocol):
+#### Checks
+
+
+def _check_protocol(protocol):
     if protocol is not None:
         if not isinstance(protocol, str):
             raise TypeError("`protocol` must be a string.")
@@ -122,7 +176,7 @@ def check_protocol(protocol):
     return protocol
 
 
-def check_base_dir(base_dir):
+def _check_base_dir(base_dir):
     if base_dir is not None:
         if not isinstance(base_dir, str):
             raise TypeError("`base_dir` must be a string.")
@@ -133,7 +187,7 @@ def check_base_dir(base_dir):
     return base_dir
 
 
-def check_satellite(satellite):
+def _check_satellite(satellite):
     if not isinstance(satellite, str):
         raise TypeError("`satellite` must be a string.")
     # Retrieve satellite key accounting for possible aliases
@@ -148,7 +202,7 @@ def check_satellite(satellite):
     return satellite_key
 
 
-def check_sector(sector, product=None):
+def _check_sector(sector, product=None):
     if not isinstance(sector, str):
         raise TypeError("`sector` must be a string.")
     # Retrieve sector key accounting for possible aliases
@@ -157,6 +211,7 @@ def check_sector(sector, product=None):
         if sector.upper() in possible_values:
             sector_key = key
             break
+    # Raise error if provided unvalid sector key
     if sector_key is None:
         valid_sector_keys = list(_sectors.keys())
         raise ValueError(f"Available satellite: {valid_sector_keys}")
@@ -170,7 +225,7 @@ def check_sector(sector, product=None):
     return sector_key
 
 
-def check_sensor(sensor):
+def _check_sensor(sensor):
     if not isinstance(sensor, str):
         raise TypeError("`sensor` must be a string.")
     valid_sensors = available_sensors()
@@ -180,37 +235,37 @@ def check_sensor(sensor):
     return sensor
 
 
-def check_sensors(sensors):
+def _check_sensors(sensors):
     if isinstance(sensors, str):
         sensors = [sensors]
-    sensors = [check_sensor(sensor) for sensor in sensors]
+    sensors = [_check_sensor(sensor) for sensor in sensors]
     return sensors
 
 
-def check_product_level(product_level, product=None):
+def _check_product_level(product_level, product=None):
     if not isinstance(product_level, str):
         raise TypeError("`product_level` must be a string.")
     product_level = product_level.capitalize()
     if product_level not in ["L1b", "L2"]:
         raise ValueError("Available product levels are ['L1b', 'L2'].")
     if product is not None:
-        if product not in get_product_level_products_dict()[product_level]:
+        if product not in _get_product_level_products_dict()[product_level]:
             raise ValueError(
                 f"`product_level` '{product_level}' does not include product '{product}'."
             )
     return product_level
 
 
-def check_product_levels(product_levels):
+def _check_product_levels(product_levels):
     if isinstance(product_levels, str):
         product_levels = [product_levels]
     product_levels = [
-        check_product_level(product_level) for product_level in product_levels
+        _check_product_level(product_level) for product_level in product_levels
     ]
     return product_levels
 
 
-def check_product(product, sensor=None, product_level=None):
+def _check_product(product, sensor=None, product_level=None):
     if not isinstance(product, str):
         raise TypeError("`product` must be a string.")
     valid_products = available_products(sensors=sensor, product_levels=product_level)
@@ -232,12 +287,15 @@ def check_product(product, sensor=None, product_level=None):
     return product_key
 
 
-def check_time(time):
-    if not isinstance(time, (datetime.datetime, str)):
+def _check_time(time):
+    if not isinstance(time, (datetime.datetime, datetime.date, str)):
         raise TypeError(
             "Specify time with datetime.datetime objects or a "
             "string of format 'YYYY-MM-DD hh:mm:ss'."
         )
+    # If datetime.date, convert to datetime.datetime
+    if not isinstance(time, (datetime.datetime, str)):
+        time = datetime.datetime(time.year, time.month, time.day, 0, 0, 0)
     if isinstance(time, str):
         try:
             time = datetime.datetime.fromisoformat(time)
@@ -246,10 +304,10 @@ def check_time(time):
     return time
 
 
-def check_start_end_time(start_time, end_time):
+def _check_start_end_time(start_time, end_time):
     # Format input
-    start_time = check_time(start_time)
-    end_time = check_time(end_time)
+    start_time = _check_time(start_time)
+    end_time = _check_time(end_time)
     # Set resolution to minutes (TODO: CONSIDER POSSIBLE MESOSCALE AT 30 SECS)
     start_time = start_time.replace(microsecond=0, second=0)
     end_time = end_time.replace(microsecond=0, second=0)
@@ -264,7 +322,7 @@ def check_start_end_time(start_time, end_time):
     return (start_time, end_time)
 
 
-def check_channel(channel):
+def _check_channel(channel):
     if not isinstance(channel, str):
         raise TypeError("`channel` must be a string.")
     # Check channel follow standard name
@@ -284,7 +342,7 @@ def check_channel(channel):
         return channel_key
 
 
-def check_channels(channels=None, sensor=None):
+def _check_channels(channels=None, sensor=None):
     if channels is None:
         return channels
     if sensor is not None:
@@ -292,11 +350,11 @@ def check_channels(channels=None, sensor=None):
             raise ValueError("`sensor` must be 'ABI' if the channels are specified!")
     if isinstance(channels, str):
         channels = [channels]
-    channels = [check_channel(channel) for channel in channels]
+    channels = [_check_channel(channel) for channel in channels]
     return channels
 
 
-def check_scan_mode(scan_mode):
+def _check_scan_mode(scan_mode):
     if not isinstance(scan_mode, str):
         raise TypeError("`scan_mode` must be a string.")
     # Check channel follow standard name
@@ -308,7 +366,7 @@ def check_scan_mode(scan_mode):
         raise ValueError(f"Available `scan_mode`: {valid_scan_modes}")
 
 
-def check_scan_modes(scan_modes=None, sensor=None):
+def _check_scan_modes(scan_modes=None, sensor=None):
     if scan_modes is None:
         return scan_modes
     if sensor is not None:
@@ -316,11 +374,11 @@ def check_scan_modes(scan_modes=None, sensor=None):
             raise ValueError("`sensor` must be 'ABI' if the scan_mode is specified!")
     if isinstance(scan_modes, str):
         scan_modes = [scan_modes]
-    scan_modes = [check_scan_mode(scan_mode) for scan_mode in scan_modes]
+    scan_modes = [_check_scan_mode(scan_mode) for scan_mode in scan_modes]
     return scan_modes
 
 
-def check_scene_abbr(scene_abbr, sensor=None, sector=None):
+def _check_scene_abbr(scene_abbr, sensor=None, sector=None):
     if scene_abbr is None:
         return scene_abbr
     if sensor is not None:
@@ -341,7 +399,7 @@ def check_scene_abbr(scene_abbr, sensor=None, sector=None):
     return scene_abbr
 
 
-def check_filter_parameters(filter_parameters, sensor, sector):
+def _check_filter_parameters(filter_parameters, sensor, sector):
     """Check filter parameters validity.
 
     It ensures that scan_modes, channels, scene_abbr are valid list (or None).
@@ -352,24 +410,24 @@ def check_filter_parameters(filter_parameters, sensor, sector):
     channels = filter_parameters.get("channels")
     scene_abbr = filter_parameters.get("scene_abbr")
     if scan_modes:
-        filter_parameters["scan_modes"] = check_scan_modes(scan_modes)
+        filter_parameters["scan_modes"] = _check_scan_modes(scan_modes)
     if channels:
-        filter_parameters["channels"] = check_channels(channels, sensor=sensor)
+        filter_parameters["channels"] = _check_channels(channels, sensor=sensor)
     if scene_abbr:
-        filter_parameters["scene_abbr"] = check_scene_abbr(
+        filter_parameters["scene_abbr"] = _check_scene_abbr(
             scene_abbr, sensor=sensor, sector=sector
         )
     return filter_parameters
 
 
-def check_group_by_key(group_by_key, sensor=None, product_level=None):
+def _check_group_by_key(group_by_key, sensor=None, product_level=None):
     if not isinstance(group_by_key, (str, type(None))):
         raise TypeError("`group_by_key`must be a string or None.")
     # TODO: Add checks !!!
     return group_by_key
 
 
-def check_connection_type(connection_type, protocol):
+def _check_connection_type(connection_type, protocol):
     if not isinstance(connection_type, (str, type(None))):
         raise TypeError("`connection_type` must be a string (or None).")
     if protocol is None:
@@ -386,11 +444,11 @@ def check_connection_type(connection_type, protocol):
     return connection_type
 
 
-def check_unique_scan_mode(fpath_dict, sensor, product_level):
+def _check_unique_scan_mode(fpath_dict, sensor, product_level):
     # TODO: raise information when it changes
     list_datetime = list(fpath_dict.keys())
     fpaths_examplars = [fpath_dict[tt][0] for tt in list_datetime]
-    list_scan_modes = get_key_from_filepaths(
+    list_scan_modes = _get_key_from_filepaths(
         fpaths_examplars, sensor, product_level, key="scan_mode"
     )
     list_scan_modes = np.unique(list_scan_modes).tolist()
@@ -400,7 +458,7 @@ def check_unique_scan_mode(fpath_dict, sensor, product_level):
         )
 
 
-def check_interval_regularity(list_datetime):
+def _check_interval_regularity(list_datetime):
     # TODO: raise info when missing between ... and ...
     if len(list_datetime) < 2:
         raise ValueError("Provide a list with at least 2 datetime.")
@@ -413,6 +471,50 @@ def check_interval_regularity(list_datetime):
 
 ####--------------------------------------------------------------------------.
 #### Dictionary retrievals
+
+
+def get_available_online_product(protocol, satellite):
+    """Get a dictionary of available products in a specific cloud bucket.
+
+    The dictionary has structure {sensor: {product_level: [products]}}.
+
+    Parameters
+    ----------
+    protocol : str
+        String specifying the cloud bucket storage that you want to explore.
+        Use `goes_api.available_protocols()` to retrieve available protocols.
+    satellite : str
+        The name of the satellite.
+        Use `goes_api.available_satellites()` to retrieve the available satellites.
+    """
+    # Get filesystem and bucket
+    fs = get_filesystem(protocol)
+    bucket = get_bucket(protocol, satellite)
+    # List contents of the satellite bucket.
+    list_dir = fs.ls(bucket)
+    list_dir = [path for path in list_dir if fs.isdir(path)]
+    # Retrieve directories name
+    list_dirname = [os.path.basename(f) for f in list_dir]
+    # Remove sector letter for ABI folders
+    list_products = [
+        product[:-1] if product.startswith("ABI") else product
+        for product in list_dirname
+    ]
+    list_products = np.unique(list_products).tolist()
+    # Retrieve sensor, product_level and product list
+    list_sensor_level_product = [product.split("-") for product in list_products]
+    # Build a dictionary
+    products_dict = {}
+    for sensor, product_level, product in list_sensor_level_product:
+        if products_dict.get(sensor) is None:
+            products_dict[sensor] = {}
+        if products_dict[sensor].get(product_level) is None:
+            products_dict[sensor][product_level] = []
+        products_dict[sensor][product_level].append(product)
+    # Return dictionary
+    return products_dict
+
+
 def _get_products_listing_dict(sensors=None, product_levels=None):
     from goes_api.listing import PRODUCTS
 
@@ -423,10 +525,10 @@ def _get_products_listing_dict(sensors=None, product_levels=None):
     if product_levels is None:
         product_levels = available_product_levels()
     # Subset by sensors
-    sensors = check_sensors(sensors)
+    sensors = _check_sensors(sensors)
     intermediate_listing = {sensor: PRODUCTS[sensor] for sensor in sensors}
     # Subset by product_levels
-    product_levels = check_product_levels(product_levels)
+    product_levels = _check_product_levels(product_levels)
     listing_dict = {}
     for sensor, product_level_dict in intermediate_listing.items():
         for product_level, products_dict in product_level_dict.items():
@@ -452,7 +554,7 @@ def _get_products_sensor_dict(sensors=None, product_levels=None):
     return products_sensor_dict
 
 
-def get_sensor_products_dict(sensors=None, product_level=None):
+def _get_sensor_products_dict(sensors=None, product_level=None):
     products_sensor_dict = _get_products_sensor_dict(
         sensors=sensors, product_level=product_level
     )
@@ -478,7 +580,7 @@ def _get_products_product_level_dict(sensors=None, product_levels=None):
     return products_product_level_dict
 
 
-def get_product_level_products_dict():
+def _get_product_level_products_dict():
     products_product_level_dict = _get_products_product_level_dict()
     product_level_product_dict = {}
     for k in set(products_product_level_dict.values()):
@@ -524,6 +626,19 @@ def get_filesystem(protocol, fs_args={}):
 
 
 def get_bucket(protocol, satellite):
+    """
+    Get the cloud bucket address for a specific satellite.
+
+    Parameters
+    ----------
+    protocol : str
+         String specifying the cloud bucket storage from which to retrieve
+         the data. Use `goes_api.available_protocols()` to retrieve available protocols.
+    satellite : str
+        The acronym of the satellite.
+        Use `goes_api.available_satellites()` to retrieve the available satellites.
+    """
+
     # Dictionary of bucket and urls
     bucket_dict = {
         "gcs": "gs://gcp-public-data-{}".format(satellite),
@@ -540,10 +655,22 @@ def get_bucket(protocol, satellite):
     return bucket_dict[protocol]
 
 
-fs = fsspec.filesystem("https")
-
-
 def _switch_to_https_fpaths(fpaths, protocol, satellite):
+    """
+    Switch bucket address with https address.
+
+    Parameters
+    ----------
+    fpaths : list
+        List of bucket filepaths.
+    protocol : str
+         String specifying the cloud bucket storage from which to retrieve
+         the data. Use `goes_api.available_protocols()` to retrieve available protocols.
+    satellite : str
+         The acronym of the satellite.
+         Use `goes_api.available_satellites()` to retrieve the available satellites.
+
+    """
     # https://storage.googleapis.com , https://storage.cloud.google.com
     https_base_url_dict = {
         "gcs": "https://storage.cloud.google.com/gcp-public-data-{}".format(satellite),
@@ -554,7 +681,8 @@ def _switch_to_https_fpaths(fpaths, protocol, satellite):
     return fpaths
 
 
-def get_bucket_prefix(protocol):
+def _get_bucket_prefix(protocol):
+    """Get protocol prefix."""
     if protocol == "gcs":
         prefix = "gs://"
     elif protocol == "s3":
@@ -568,30 +696,25 @@ def get_bucket_prefix(protocol):
     return prefix
 
 
-def get_product_name(sensor, product_level, product, sector):
+def _get_product_name(sensor, product_level, product, sector):
+    """Get bucket directory name of a product."""
     product_name = f"{sensor}-{product_level}-{product}{sector}"
     return product_name
 
 
-def get_product_dir(
+def _get_product_dir(
     satellite, sensor, product_level, product, sector, protocol=None, base_dir=None
 ):
+    """Get product (bucket) directory path."""
     if base_dir is None:
         bucket = get_bucket(protocol, satellite)
     else:
         bucket = os.path.join(base_dir, satellite.upper())
         if not os.path.exists(bucket):
             raise OSError(f"The directory {bucket} does not exist.")
-    product_name = get_product_name(sensor, product_level, product, sector)
+    product_name = _get_product_name(sensor, product_level, product, sector)
     product_dir = os.path.join(bucket, product_name)
     return product_dir
-
-
-def dt_to_year_doy_hour(dt):
-    year = dt.strftime("%Y")  # year
-    day_of_year = dt.strftime("%j")  # day of year in julian format
-    hour = dt.strftime("%H")  # 2-digit hour format
-    return year, day_of_year, hour
 
 
 ####---------------------------------------------------------------------------.
@@ -599,7 +722,7 @@ def dt_to_year_doy_hour(dt):
 
 
 def _separate_product_scene_abbr(product_scene_abbr):
-    "Return (product, scene_abbr) from <product><scene_abbr> string."
+    """Return (product, scene_abbr) from <product><scene_abbr> string."""
     last_letter = product_scene_abbr[-1]
     # Mesoscale domain
     if last_letter in ["1", "2"]:
@@ -611,7 +734,8 @@ def _separate_product_scene_abbr(product_scene_abbr):
         raise NotImplementedError("Adapat the file patterns.")
 
 
-def get_info_from_filename(fname, sensor, product_level):
+def _get_info_from_filename(fname, sensor, product_level):
+    """Retrieve file information dictionary from filename."""
     from goes_api.listing import GLOB_FNAME_PATTERN
 
     fpattern = GLOB_FNAME_PATTERN[sensor][product_level]
@@ -620,30 +744,40 @@ def get_info_from_filename(fname, sensor, product_level):
     # Round start_time and end_time to minute resolution
     info_dict["start_time"] = info_dict["start_time"].replace(microsecond=0, second=0)
     info_dict["end_time"] = info_dict["end_time"].replace(microsecond=0, second=0)
-    # Special treatment for identify scene_abbr in L2 products
+    # Special treatment for L2 products
     if info_dict.get("product_scene_abbr") is not None:
+        # Identify scene_abbr
         product, scene_abbr = _separate_product_scene_abbr(
             info_dict.get("product_scene_abbr")
         )
         info_dict["product"] = product
         info_dict["scene_abbr"] = scene_abbr
         del info_dict["product_scene_abbr"]
+        # Special treatment for CMIP to extract channels
+        if product == "CMIP":
+            scan_mode_channels = info_dict["scan_mode"]
+            scan_mode = scan_mode_channels[0:3]
+            channels = scan_mode_channels[3:]
+            info_dict["scan_mode"] = scan_mode
+            info_dict["channels"] = channels
     # Return info dictionary
     return info_dict
 
 
-def get_info_from_filepath(fpath, sensor, product_level):
+def _get_info_from_filepath(fpath, sensor, product_level):
+    """Retrieve file information dictionary from filepath."""
     if not isinstance(fpath, str):
         raise TypeError("'fpath' must be a string.")
     fname = os.path.basename(fpath)
-    return get_info_from_filename(fname, sensor, product_level)
+    return _get_info_from_filename(fname, sensor, product_level)
 
 
-def get_key_from_filepaths(fpaths, sensor, product_level, key):
+def _get_key_from_filepaths(fpaths, sensor, product_level, key):
+    """Extract specific key information from a list of filepaths."""
     if isinstance(fpaths, str):
         fpaths = [fpaths]
     return [
-        get_info_from_filepath(fpath, sensor, product_level)[key] for fpath in fpaths
+        _get_info_from_filepath(fpath, sensor, product_level)[key] for fpath in fpaths
     ]
 
 
@@ -653,14 +787,15 @@ def _filter_file(
     product_level,
     start_time=None,
     end_time=None,
-    scan_mode=None,
+    scan_modes=None,
     channels=None,
     scene_abbr=None,
 ):
+    """Utility function to filter a filepath based on optional filter_parameters."""
     # scan_mode and channels must be list, start_time and end_time a datetime object
 
     # Get info from filepath
-    info_dict = get_info_from_filepath(fpath, sensor, product_level)
+    info_dict = _get_info_from_filepath(fpath, sensor, product_level)
 
     # Filter by channels
     if channels is not None:
@@ -670,10 +805,10 @@ def _filter_file(
                 return None
 
     # Filter by scan mode
-    if scan_mode is not None:
+    if scan_modes is not None:
         file_scan_mode = info_dict.get("scan_mode")
         if file_scan_mode is not None:
-            if file_scan_mode not in scan_mode:
+            if file_scan_mode not in scan_modes:
                 return None
 
     # Filter by scene_abbr
@@ -705,16 +840,17 @@ def _filter_file(
     return fpath
 
 
-def filter_files(
+def _filter_files(
     fpaths,
     sensor,
     product_level,
     start_time=None,
     end_time=None,
-    scan_mode=None,
+    scan_modes=None,
     channels=None,
     scene_abbr=None,
 ):
+    """Utility function to select filepaths matching optional filter_parameters."""
     if isinstance(fpaths, str):
         fpaths = [fpaths]
     fpaths = [
@@ -724,7 +860,7 @@ def filter_files(
             product_level,
             start_time=start_time,
             end_time=end_time,
-            scan_mode=scan_mode,
+            scan_modes=scan_modes,
             channels=channels,
             scene_abbr=scene_abbr,
         )
@@ -734,9 +870,75 @@ def filter_files(
     return fpaths
 
 
+def filter_files(
+    fpaths,
+    sensor,
+    product_level,
+    start_time=None,
+    end_time=None,
+    scan_modes=None,
+    scene_abbr=None,
+    channels=None,
+):
+    """
+    Filter files by optional parameters.
+
+    The optional parameters can also be defined within a `filter_parameters`
+    dictionary which is then passed to `find_files` or `download_files` functions.
+
+    Parameters
+    ----------
+    fpaths : list
+        List of filepaths.
+    sensor : str
+        Satellite sensor.
+        See `goes_api.available_sensors()` for available sensors.
+    product_level : str
+        Product level.
+        See `goes_api.available_product_levels()` for available product levels.
+    start_time : datetime.datetime, optional
+        Time defining interval start.
+        The default is None (no filtering by start_time).
+    end_time : datetime.datetime, optional
+        Time defining interval end.
+        The default is None (no filtering by end_time).
+    scan_modes : list, optional
+        List of ABI scan modes to select.
+        See `goes_api.available_scan_modes()` for available scan modes.
+        The default is None (no filtering by scan_modes).
+    scene_abbr : str, optional
+        String specifying selection of mesoscale scan region.
+        Either M1 or M2.
+        The default is None (no filtering by mesoscale scan region).
+    channels : list, optional
+        List of ABI channels to select.
+        See `goes_api.available_channels()` for available ABI channels.
+        The default is None (no filtering by channels).
+
+    """
+    sensor = _check_sensor(sensor)
+    product_level = _check_product_level(product_level, product=None)
+    scan_modes = _check_scan_modes(scan_modes)
+    channels = _check_channels(channels, sensor=sensor)
+    scene_abbr = _check_scene_abbr(scene_abbr, sensor=sensor)
+    start_time, end_time = _check_start_end_time(start_time, end_time)
+    fpaths = _filter_files(
+        fpaths=fpaths,
+        sensor=sensor,
+        product_level=product_level,
+        start_time=start_time,
+        end_time=end_time,
+        scan_modes=scan_modes,
+        channels=channels,
+        scene_abbr=scene_abbr,
+    )
+    return fpaths
+
+
 ####---------------------------------------------------------------------------.
 #### Search files
 def _get_sector_timedelta(sector):
+    """Get reasonable timedelta based on sector to find previous/next acquisition."""
     if sector == "M":
         dt = datetime.timedelta(minutes=1)
     elif sector == "C":
@@ -746,9 +948,10 @@ def _get_sector_timedelta(sector):
     return dt
 
 
-def group_fpaths_by_key(fpaths, sensor, product_level, key="start_time"):
+def _group_fpaths_by_key(fpaths, sensor, product_level, key="start_time"):
+    """Utils function to group filepaths by key contained into filename."""
     list_key_values = [
-        get_info_from_filepath(fpath, sensor, product_level)[key] for fpath in fpaths
+        _get_info_from_filepath(fpath, sensor, product_level)[key] for fpath in fpaths
     ]
     # - Sort fpaths by key values
     idx_key_sorting = np.array(list_key_values).argsort()
@@ -760,6 +963,40 @@ def group_fpaths_by_key(fpaths, sensor, product_level, key="start_time"):
     fpaths_grouped = np.split(fpaths, cut_idx)[1:]
     # - Create (key: files) dictionary
     fpaths_dict = dict(zip(unique_key_values, fpaths_grouped))
+    return fpaths_dict
+
+
+def group_files(fpaths, sensor, product_level, key="start_time"):
+    """
+    Group filepaths by key contained into filenames.
+
+    Parameters
+    ----------
+    fpaths : list
+        List of filepaths.
+    sensor : str
+        Satellite sensor.
+        See `goes_api.available_sensors()` for available sensors.
+    product_level : str
+        Product level.
+        See `goes_api.available_product_levels()` for available product levels.
+    key : str
+        Key by which to group the list of filepaths.
+        The default key is "start_time".
+        See `goes_api.available_group_keys()` for available grouping keys.
+
+    Returns
+    -------
+    fpaths_dict : dict
+        Dictionary with structure {<key>: list_fpaths_with_<key>}.
+
+    """
+    sensor = _check_sensor(sensor)
+    product_level = _check_product_level(product_level, product=None)
+    key = _check_group_by_key(key, sensor, product_level)
+    fpaths_dict = _group_fpaths_by_key(
+        fpaths=fpaths, sensor=sensor, product_level=product_level, key=key
+    )
     return fpaths_dict
 
 
@@ -779,7 +1016,63 @@ def find_files(
     fs_args={},
     verbose=False,
 ):
-    # In reading mode, if looking at mesoscale domain, remember to specify scene_abbr == "M<1/2> in  filter_parameters
+    """
+    Retrieve files from local or cloud bucket storage.
+
+    If you are querying mesoscale domain data (sector=M), you might be
+      interested to specify in the filter_parameters dictionary the
+      key `scene_abbr` with values "M1" or "M2".
+
+    Parameters
+    ----------
+    base_dir : str
+        Base directory path where the <GOES-**> satellite is located.
+        This argument must be specified only if searching files on local storage.
+        If it is specified, protocol and fs_args arguments must not be specified.
+    protocol : str
+        String specifying the cloud bucket storage from which to retrieve
+        the data. It must be specified if not searching data on local storage.
+        Use `goes_api.available_protocols()` to retrieve available protocols.
+    fs_args : dict, optional
+        Dictionary specifying optional settings to initiate the fsspec.filesystem.
+        The default is an empty dictionary. Anonymous connection is set by default.
+    satellite : str
+        The name of the satellite.
+        Use `goes_api.available_satellites()` to retrieve the available satellites.
+    sensor : str
+        Satellite sensor.
+        See `goes_api.available_sensors()` for available sensors.
+    product_level : str
+        Product level.
+        See `goes_api.available_product_levels()` for available product levels.
+    product : str
+        The name of the product to retrieve.
+        See `goes_api.available_products()` for a list of available products.
+    sector : str
+        The acronym of the sector for which to retrieve the files.
+        See `goes_api.available_sectors()` for a list of available sectors.
+    start_time : datetime.datetime
+        The start (inclusive) time of the interval period for retrieving the filepaths.
+    end_time : datetime.datetime
+        The end (exclusive) time of the interval period for retrieving the filepaths.
+    filter_parameters : dict, optional
+        Dictionary specifying option filtering parameters.
+        Valid keys includes: `channels`, `scan_modes`, `scene_abbr`.
+        The default is a empty dictionary (no filtering).
+    group_by_key : str, optional
+        Key by which to group the list of filepaths
+        See `goes_api.available_group_keys()` for available grouping keys.
+        If a key is provided, the function returns a dictionary with grouped filepaths.
+        By default, no key is specified and the function returns a list of filepaths.
+    connection_type : str, optional
+        The type of connection to a cloud bucket.
+        This argument applies only if working with cloud buckets (base_dir is None).
+        See `goes_api.available_connection_types` for implemented solutions.
+    verbose : bool, optional
+        If True, it print some information concerning the file search.
+        The default is False.
+
+    """
 
     # Check inputs
     if protocol is None and base_dir is None:
@@ -788,35 +1081,36 @@ def find_files(
         if protocol is not None:
             if protocol not in ["file", "local"]:
                 raise ValueError("If base_dir is specified, protocol must be None.")
-
+        else:
+            protocol = "file "
     # Format inputs
-    protocol = check_protocol(protocol)
-    base_dir = check_base_dir(base_dir)
-    connection_type = check_connection_type(connection_type, protocol)
-    satellite = check_satellite(satellite)
-    sensor = check_sensor(sensor)
-    sector = check_sector(sector)
-    product_level = check_product_level(product_level, product=None)
-    product = check_product(product, sensor=sensor, product_level=product_level)
-    start_time, end_time = check_start_end_time(start_time, end_time)
+    protocol = _check_protocol(protocol)
+    base_dir = _check_base_dir(base_dir)
+    connection_type = _check_connection_type(connection_type, protocol)
+    satellite = _check_satellite(satellite)
+    sensor = _check_sensor(sensor)
+    product_level = _check_product_level(product_level, product=None)
+    product = _check_product(product, sensor=sensor, product_level=product_level)
+    sector = _check_sector(sector, product=product)
+    start_time, end_time = _check_start_end_time(start_time, end_time)
 
-    filter_parameters = check_filter_parameters(
+    filter_parameters = _check_filter_parameters(
         filter_parameters, sensor, sector=sector
     )
-    group_by_key = check_group_by_key(group_by_key, sensor, product_level)
+    group_by_key = _check_group_by_key(group_by_key, sensor, product_level)
 
     # Add start_time and end_time to filter_parameters
-    # TODO: could be set to None except for first and last glob pattern !
+    filter_parameters = filter_parameters.copy()
     filter_parameters["start_time"] = start_time
     filter_parameters["end_time"] = end_time
 
     # Get filesystem
     fs = get_filesystem(protocol=protocol, fs_args=fs_args)
 
-    bucket_prefix = get_bucket_prefix(protocol)
+    bucket_prefix = _get_bucket_prefix(protocol)
 
     # Get product dir
-    product_dir = get_product_dir(
+    product_dir = _get_product_dir(
         protocol=protocol,
         base_dir=base_dir,
         satellite=satellite,
@@ -827,11 +1121,12 @@ def find_files(
     )
 
     # Define time directories
-    start_year, start_doy, start_hour = dt_to_year_doy_hour(start_time)
-    end_year, end_doy, end_hour = dt_to_year_doy_hour(end_time)
+    start_year, start_doy, start_hour = _dt_to_year_doy_hour(start_time)
+    end_year, end_doy, end_hour = _dt_to_year_doy_hour(end_time)
     list_hourly_times = pandas.date_range(start_time, end_time, freq="1h")
-    list_year_doy_hour = [dt_to_year_doy_hour(dt) for dt in list_hourly_times]
+    list_year_doy_hour = [_dt_to_year_doy_hour(dt) for dt in list_hourly_times]
     list_year_doy_hour = ["/".join(tpl) for tpl in list_year_doy_hour]
+
     # Define glob patterns
     list_glob_pattern = [
         os.path.join(product_dir, dt_str, "*.nc") for dt_str in list_year_doy_hour
@@ -850,14 +1145,14 @@ def find_files(
         fpaths = [bucket_prefix + fpath for fpath in fpaths]
         # Filter files if necessary
         if len(filter_parameters) >= 1:
-            fpaths = filter_files(fpaths, sensor, product_level, **filter_parameters)
+            fpaths = _filter_files(fpaths, sensor, product_level, **filter_parameters)
         list_fpaths += fpaths
 
     fpaths = list_fpaths
 
     # Group fpaths by key
     if group_by_key:
-        fpaths = group_fpaths_by_key(fpaths, sensor, product_level, key=group_by_key)
+        fpaths = _group_fpaths_by_key(fpaths, sensor, product_level, key=group_by_key)
     # Parse fpaths for connection type
     fpaths = _set_connection_type(
         fpaths, satellite=satellite, protocol=protocol, connection_type=connection_type
@@ -866,8 +1161,6 @@ def find_files(
     return fpaths
 
 
-####---------------------------------------------------------------------------.
-#### Search start_time
 def find_closest_start_time(
     time,
     satellite,
@@ -875,14 +1168,51 @@ def find_closest_start_time(
     product_level,
     product,
     sector,
-    connection_type=None,
     base_dir=None,
     protocol=None,
     fs_args={},
     filter_parameters={},
 ):
+    """
+    Retrieve files start_time closest to the specified time.
+
+    Parameters
+    ----------
+    base_dir : str
+        Base directory path where the <GOES-**> satellite is located.
+        This argument must be specified only if searching files on local storage.
+        If it is specified, protocol and fs_args arguments must not be specified.
+    protocol : str
+        String specifying the cloud bucket storage from which to retrieve
+        the data. It must be specified if not searching data on local storage.
+        Use `goes_api.available_protocols()` to retrieve available protocols.
+    fs_args : dict, optional
+        Dictionary specifying optional settings to initiate the fsspec.filesystem.
+        The default is an empty dictionary. Anonymous connection is set by default.
+    satellite : str
+        The name of the satellite.
+        Use `goes_api.available_satellites()` to retrieve the available satellites.
+    sensor : str
+        Satellite sensor.
+        See `goes_api.available_sensors()` for available sensors.
+    product_level : str
+        Product level.
+        See `goes_api.available_product_levels()` for available product levels.
+    product : str
+        The name of the product to retrieve.
+        See `goes_api.available_products()` for a list of available products.
+    sector : str
+        The acronym of the sector for which to retrieve the files.
+        See `goes_api.available_sectors()` for a list of available sectors.
+    time : datetime.datetime
+        The time for which you desire to know the closest file start_time.
+    filter_parameters: dict, optional
+        Dictionary specifying option filtering parameters.
+        Valid keys includes: `channels`, `scan_modes`, `scene_abbr`.
+        The default is a empty dictionary (no filtering).
+    """
     # Set time precision to minutes
-    time = check_time(time)
+    time = _check_time(time)
     time = time.replace(microsecond=0, second=0)
     # Retrieve timedelta conditioned to sector type
     timedelta = _get_sector_timedelta(sector)
@@ -930,6 +1260,45 @@ def find_latest_start_time(
     filter_parameters={},
     look_ahead_minutes=30,
 ):
+    """
+    Retrieve the latest file start_time available.
+
+    Parameters
+    ----------
+    look_ahead_minutes: int, optional
+        Number of minutes before actual time to search for latest data.
+        THe default is 30 minutes.
+    base_dir : str
+        Base directory path where the <GOES-**> satellite is located.
+        This argument must be specified only if searching files on local storage.
+        If it is specified, protocol and fs_args arguments must not be specified.
+    protocol : str
+        String specifying the cloud bucket storage from which to retrieve
+        the data. It must be specified if not searching data on local storage.
+        Use `goes_api.available_protocols()` to retrieve available protocols.
+    fs_args : dict, optional
+        Dictionary specifying optional settings to initiate the fsspec.filesystem.
+        The default is an empty dictionary. Anonymous connection is set by default.
+    satellite : str
+        The name of the satellite.
+        Use `goes_api.available_satellites()` to retrieve the available satellites.
+    sensor : str
+        Satellite sensor.
+        See `goes_api.available_sensors()` for available sensors.
+    product_level : str
+        Product level.
+        See `goes_api.available_product_levels()` for available product levels.
+    product : str
+        The name of the product to retrieve.
+        See `goes_api.available_products()` for a list of available products.
+    sector : str
+        The acronym of the sector for which to retrieve the files.
+        See `goes_api.available_sectors()` for a list of available sectors.
+    filter_parameters: dict, optional
+        Dictionary specifying option filtering parameters.
+        Valid keys includes: `channels`, `scan_modes`, `scene_abbr`.
+        The default is a empty dictionary (no filtering).
+    """
     # Search in the past N hour of data
     start_time = datetime.datetime.utcnow() - datetime.timedelta(
         minutes=look_ahead_minutes
@@ -958,6 +1327,191 @@ def find_latest_start_time(
     return datetime_latest
 
 
+def find_closest_files(
+    time,
+    satellite,
+    sensor,
+    product_level,
+    product,
+    sector,
+    connection_type=None,
+    base_dir=None,
+    protocol=None,
+    fs_args={},
+    filter_parameters={},
+):
+    """
+    Retrieve files closest to the specified time.
+
+    If you are querying mesoscale domain data (sector=M), you might be
+      interested to specify in the filter_parameters dictionary the
+      key `scene_abbr` with values "M1" or "M2".
+
+    Parameters
+    ----------
+    base_dir : str
+        Base directory path where the <GOES-**> satellite is located.
+        This argument must be specified only if searching files on local storage.
+        If it is specified, protocol and fs_args arguments must not be specified.
+    protocol : str
+        String specifying the cloud bucket storage from which to retrieve
+        the data. It must be specified if not searching data on local storage.
+        Use `goes_api.available_protocols()` to retrieve available protocols.
+    fs_args : dict, optional
+        Dictionary specifying optional settings to initiate the fsspec.filesystem.
+        The default is an empty dictionary. Anonymous connection is set by default.
+    satellite : str
+        The name of the satellite.
+        Use `goes_api.available_satellites()` to retrieve the available satellites.
+    sensor : str
+        Satellite sensor.
+        See `goes_api.available_sensors()` for available sensors.
+    product_level : str
+        Product level.
+        See `goes_api.available_product_levels()` for available product levels.
+    product : str
+        The name of the product to retrieve.
+        See `goes_api.available_products()` for a list of available products.
+    sector : str
+        The acronym of the sector for which to retrieve the files.
+        See `goes_api.available_sectors()` for a list of available sectors.
+    time : datetime.datetime
+        The time for which you desire to retrieve the files with closest start_time.
+    filter_parameters : dict, optional
+        Dictionary specifying option filtering parameters.
+        Valid keys includes: `channels`, `scan_modes`, `scene_abbr`.
+        The default is a empty dictionary (no filtering).
+    connection_type : str, optional
+        The type of connection to a cloud bucket.
+        This argument applies only if working with cloud buckets (base_dir is None).
+        See `goes_api.available_connection_types` for implemented solutions.
+
+    """
+    # Set time precision to minutes
+    time = _check_time(time)
+    time = time.replace(microsecond=0, second=0)
+    # Retrieve timedelta conditioned to sector type
+    timedelta = _get_sector_timedelta(sector)
+    # Define start_time and end_time
+    start_time = time - timedelta
+    end_time = time + timedelta
+    # Retrieve files
+    fpath_dict = find_files(
+        base_dir=base_dir,
+        protocol=protocol,
+        fs_args=fs_args,
+        satellite=satellite,
+        sensor=sensor,
+        product_level=product_level,
+        product=product,
+        sector=sector,
+        start_time=start_time,
+        end_time=end_time,
+        filter_parameters=filter_parameters,
+        group_by_key="start_time",
+        verbose=False,
+    )
+    # Select start_time closest to time
+    list_datetime = sorted(list(fpath_dict.keys()))
+    if len(list_datetime) == 0:
+        dt_str = int(timedelta.seconds / 60)
+        raise ValueError(
+            f"No data available in previous and next {dt_str} minutes around {time}."
+        )
+    idx_closest = np.argmin(np.abs(np.array(list_datetime) - time))
+    datetime_closest = list_datetime[idx_closest]
+    return fpath_dict[datetime_closest]
+
+
+def find_latest_files(
+    satellite,
+    sensor,
+    product_level,
+    product,
+    sector,
+    connection_type=None,
+    base_dir=None,
+    protocol=None,
+    fs_args={},
+    filter_parameters={},
+    look_ahead_minutes=30,
+):
+    """
+    Retrieve latest available files.
+
+    If you are querying mesoscale domain data (sector=M), you might be
+      interested to specify in the filter_parameters dictionary the
+      key `scene_abbr` with values "M1" or "M2".
+
+    Parameters
+    ----------
+    look_ahead_minutes: int, optional
+        Number of minutes before actual time to search for latest data.
+        THe default is 30 minutes.
+    base_dir : str
+        Base directory path where the <GOES-**> satellite is located.
+        This argument must be specified only if searching files on local storage.
+        If it is specified, protocol and fs_args arguments must not be specified.
+    protocol : str
+        String specifying the cloud bucket storage from which to retrieve
+        the data. It must be specified if not searching data on local storage.
+        Use `goes_api.available_protocols()` to retrieve available protocols.
+    fs_args : dict, optional
+        Dictionary specifying optional settings to initiate the fsspec.filesystem.
+        The default is an empty dictionary. Anonymous connection is set by default.
+    satellite : str
+        The name of the satellite.
+        Use `goes_api.available_satellites()` to retrieve the available satellites.
+    sensor : str
+        Satellite sensor.
+        See `goes_api.available_sensors()` for available sensors.
+    product_level : str
+        Product level.
+        See `goes_api.available_product_levels()` for available product levels.
+    product : str
+        The name of the product to retrieve.
+        See `goes_api.available_products()` for a list of available products.
+    sector : str
+        The acronym of the sector for which to retrieve the files.
+        See `goes_api.available_sectors()` for a list of available sectors.
+    filter_parameters : dict, optional
+        Dictionary specifying option filtering parameters.
+        Valid keys includes: `channels`, `scan_modes`, `scene_abbr`.
+        The default is a empty dictionary (no filtering).
+    connection_type : str, optional
+        The type of connection to a cloud bucket.
+        This argument applies only if working with cloud buckets (base_dir is None).
+        See `goes_api.available_connection_types` for implemented solutions.
+
+    """
+    # Search in the past N hour of data
+    start_time = datetime.datetime.utcnow() - datetime.timedelta(
+        minutes=look_ahead_minutes
+    )
+    end_time = datetime.datetime.utcnow()
+    fpath_dict = find_files(
+        base_dir=base_dir,
+        protocol=protocol,
+        fs_args=fs_args,
+        satellite=satellite,
+        sensor=sensor,
+        product_level=product_level,
+        product=product,
+        sector=sector,
+        start_time=start_time,
+        end_time=end_time,
+        filter_parameters=filter_parameters,
+        group_by_key="start_time",
+        connection_type=connection_type,
+        verbose=False,
+    )
+    # Find the latest time available
+    list_datetime = list(fpath_dict.keys())
+    idx_latest = np.argmax(np.array(list_datetime))
+    datetime_latest = list_datetime[idx_latest]
+    return fpath_dict[datetime_latest]
+
+
 def find_previous_files(
     start_time,
     N,
@@ -980,7 +1534,7 @@ def find_previous_files(
     Parameters
     ----------
     start_time : datetime
-        The start_time from which search for previous files.
+        The start_time from which to search for previous files.
         The start_time should correspond exactly to file start_time if check_consistency=True
     N : int
         The number of previous timesteps for which to retrieve the files.
@@ -994,6 +1548,40 @@ def find_previous_files(
          - the regularity of the previous timesteps, with no missing timesteps;
          - the regularity of the scan mode, i.e. not switching from M3 to M6,
          - if sector == M, the mesoscale domains are not changing within the considered period.
+    base_dir : str
+        Base directory path where the <GOES-**> satellite is located.
+        This argument must be specified only if searching files on local storage.
+        If it is specified, protocol and fs_args arguments must not be specified.
+    protocol : str
+        String specifying the cloud bucket storage from which to retrieve
+        the data. It must be specified if not searching data on local storage.
+        Use `goes_api.available_protocols()` to retrieve available protocols.
+    fs_args : dict, optional
+        Dictionary specifying optional settings to initiate the fsspec.filesystem.
+        The default is an empty dictionary. Anonymous connection is set by default.
+    satellite : str
+        The name of the satellite.
+        Use `goes_api.available_satellites()` to retrieve the available satellites.
+    sensor : str
+        Satellite sensor.
+        See `goes_api.available_sensors()` for available sensors.
+    product_level : str
+        Product level.
+        See `goes_api.available_product_levels()` for available product levels.
+    product : str
+        The name of the product to retrieve.
+        See `goes_api.available_products()` for a list of available products.
+    sector : str
+        The acronym of the sector for which to retrieve the files.
+        See `goes_api.available_sectors()` for a list of available sectors.
+    filter_parameters : dict, optional
+        Dictionary specifying option filtering parameters.
+        Valid keys includes: `channels`, `scan_modes`, `scene_abbr`.
+        The default is a empty dictionary (no filtering).
+    connection_type : str, optional
+        The type of connection to a cloud bucket.
+        This argument applies only if working with cloud buckets (base_dir is None).
+        See `goes_api.available_connection_types` for implemented solutions.
 
     Returns
     -------
@@ -1002,7 +1590,7 @@ def find_previous_files(
 
     """
     # Set time precision to minutes
-    start_time = check_time(start_time)
+    start_time = _check_time(start_time)
     start_time = start_time.replace(microsecond=0, second=0)
     # Get closest time and check is as start_time (otherwise warning)
     closest_time = find_closest_start_time(
@@ -1065,9 +1653,9 @@ def find_previous_files(
     # Perform consistency checks
     if check_consistency:
         # Check constant scan_mode
-        check_unique_scan_mode(fpath_dict, sensor, product_level)
+        _check_unique_scan_mode(fpath_dict, sensor, product_level)
         # Check for interval regularity
-        check_interval_regularity(list_datetime + [closest_time])
+        _check_interval_regularity(list_datetime + [closest_time])
         # TODO Check for Mesoscale same location (on M1 and M2 separately) !
         # - raise information when it changes !
         if sector == "M":
@@ -1113,6 +1701,40 @@ def find_next_files(
          - the regularity of the previous timesteps, with no missing timesteps;
          - the regularity of the scan mode, i.e. not switching from M3 to M6,
          - if sector == M, the mesoscale domains are not changing within the considered period.
+    base_dir : str
+        Base directory path where the <GOES-**> satellite is located.
+        This argument must be specified only if searching files on local storage.
+        If it is specified, protocol and fs_args arguments must not be specified.
+    protocol : str
+        String specifying the cloud bucket storage from which to retrieve
+        the data. It must be specified if not searching data on local storage.
+        Use `goes_api.available_protocols()` to retrieve available protocols.
+    fs_args : dict, optional
+        Dictionary specifying optional settings to initiate the fsspec.filesystem.
+        The default is an empty dictionary. Anonymous connection is set by default.
+    satellite : str
+        The name of the satellite.
+        Use `goes_api.available_satellites()` to retrieve the available satellites.
+    sensor : str
+        Satellite sensor.
+        See `goes_api.available_sensors()` for available sensors.
+    product_level : str
+        Product level.
+        See `goes_api.available_product_levels()` for available product levels.
+    product : str
+        The name of the product to retrieve.
+        See `goes_api.available_products()` for a list of available products.
+    sector : str
+        The acronym of the sector for which to retrieve the files.
+        See `goes_api.available_sectors()` for a list of available sectors.
+    filter_parameters : dict, optional
+        Dictionary specifying option filtering parameters.
+        Valid keys includes: `channels`, `scan_modes`, `scene_abbr`.
+        The default is a empty dictionary (no filtering).
+    connection_type : str, optional
+        The type of connection to a cloud bucket.
+        This argument applies only if working with cloud buckets (base_dir is None).
+        See `goes_api.available_connection_types` for implemented solutions.
 
     Returns
     -------
@@ -1121,7 +1743,7 @@ def find_next_files(
 
     """
     # Set time precision to minutes
-    start_time = check_time(start_time)
+    start_time = _check_time(start_time)
     start_time = start_time.replace(microsecond=0, second=0)
     # Get closest time and check is as start_time (otherwise warning)
     closest_time = find_closest_start_time(
@@ -1184,9 +1806,9 @@ def find_next_files(
     # Perform consistency checks
     if check_consistency:
         # Check constant scan_mode
-        check_unique_scan_mode(fpath_dict, sensor, product_level)
+        _check_unique_scan_mode(fpath_dict, sensor, product_level)
         # Check for interval regularity
-        check_interval_regularity(list_datetime + [closest_time])
+        _check_interval_regularity(list_datetime + [closest_time])
         # TODO Check for Mesoscale same location (on M1 and M2 separately) !
         # - raise information when it changes !
         if sector == "M":
@@ -1198,7 +1820,7 @@ def find_next_files(
 
 ####--------------------------------------------------------------------------.
 #### Output options
-def _add_nc_mode_bytes(fpaths):
+def _add_nc_bytes(fpaths):
     """Add `#mode=bytes` to the HTTP netCDF4 url."""
     fpaths = [fpath + "#mode=bytes" for fpath in fpaths]
     return fpaths
@@ -1219,7 +1841,7 @@ def _set_connection_type(fpaths, satellite, protocol=None, connection_type=None)
                 fpaths, protocol=protocol, satellite=satellite
             )
             if connection_type == "nc_bytes":
-                fpaths = _add_nc_mode_bytes(fpaths)
+                fpaths = _add_nc_bytes(fpaths)
         if isinstance(fpaths, dict):
             fpaths = {
                 tt: _switch_to_https_fpaths(
@@ -1229,80 +1851,10 @@ def _set_connection_type(fpaths, satellite, protocol=None, connection_type=None)
             }
             if connection_type == "nc_bytes":
                 fpaths = {
-                    tt: _add_nc_mode_bytes(l_fpaths) for tt, l_fpaths in fpaths.items()
+                    tt: _add_nc_bytes(l_fpaths) for tt, l_fpaths in fpaths.items()
                 }
         return fpaths
     else:  # TODO: add kerchunk (maybe)
         raise NotImplementedError(
             "'bucket','https', 'nc_bytes' are the only `connection_type` available."
         )
-
-
-####--------------------------------------------------------------------------.
-#### Utils
-import subprocess
-import sys
-
-
-def open_directory_explorer(satellite, protocol=None, base_dir=None):
-    import webbrowser
-
-    if protocol == "s3":
-        satellite = satellite.replace("-", "")  # goes16
-        fpath = f"https://noaa-{satellite}.s3.amazonaws.com/index.html"
-        webbrowser.open(fpath, new=1)
-    elif protocol == "gcs":
-        # goes-16
-        fpath = f"https://console.cloud.google.com/storage/browser/gcp-public-data-{satellite}"
-        webbrowser.open(fpath, new=1)
-    elif base_dir is not None:
-        webbrowser.open(os.path.join(base_dir, satellite))
-    else:
-        raise NotImplementedError(
-            "Current available protocols are 'gcs', 's3', 'local'."
-        )
-
-
-def get_ABI_channel_info(channel):
-    "Open ABI QuickGuide of the channel."
-    # http://cimss.ssec.wisc.edu/goes/OCLOFactSheetPDFs/
-    import webbrowser
-
-    channel = check_channel(channel)
-    channel_number = channel[1:]  # 01-16
-    url = f"http://cimss.ssec.wisc.edu/goes/OCLOFactSheetPDFs/ABIQuickGuide_Band{channel_number}.pdf"
-    webbrowser.open(url, new=1)
-    return None
-
-
-# TODO: FOR ABI L2
-# http://cimss.ssec.wisc.edu/goes/OCLOFactSheetPDFs/
-
-
-def get_available_online_product(protocol, satellite):
-    # Get filesystem and bucket
-    fs = get_filesystem(protocol)
-    bucket = get_bucket(protocol, satellite)
-    # List contents of the satellite bucket.
-    list_dir = fs.ls(bucket)
-    list_dir = [path for path in list_dir if fs.isdir(path)]
-    # Retrieve directories name
-    list_dirname = [os.path.basename(f) for f in list_dir]
-    # Remove sector letter for ABI folders
-    list_products = [
-        product[:-1] if product.startswith("ABI") else product
-        for product in list_dirname
-    ]
-    list_products = np.unique(list_products).tolist()
-    # Retrieve sensor, product_level and product list
-    list_sensor_level_product = [product.split("-") for product in list_products]
-    # Build a dictionary
-    products_dict = {}
-    for sensor, product_level, product in list_sensor_level_product:
-        if products_dict.get(sensor) is None:
-            products_dict[sensor] = {}
-        if products_dict[sensor].get(product_level) is None:
-            products_dict[sensor][product_level] = []
-        products_dict[sensor][product_level].append(product)
-    # Return dictionary
-    return products_dict

@@ -6,6 +6,47 @@ Created on Tue Mar  1 16:33:44 2022
 @author: ghiggi
 """
  
+
+# The L1b Radiances and L2 Cloud and Moisture Imagery have separate files for each of the 16 bands.
+# 'ABI-L2-MCMIPC
+# 'ABI-L1b-RadC',
+
+# Full disk scans are available every 15 minutes
+# CONUS scans are available every 5 minutes
+# Mesoscale scans are available every minute
+
+# M3: is mode 3 (scan operation),
+# M4 is mode 4 (only full disk scans every five minutes – no mesoscale or CONUS)
+## https://www.goes-r.gov/users/abiScanModeInfo.html 
+# https://www.youtube.com/watch?v=qCAPwgQR13w&ab_channel=NOAASatellites
+# Mode 3 
+# - Till April 2, 2019 
+# - FULL DISK every 15 minutes 
+# - CONUS every 5 minutes
+
+# Mode 3 Cooling Time (just for GOES-17 some periods of the year)
+# --> M1 and M2 every 2 minutes
+# --> CONUS not scanned 
+
+# Mode 6 (difference between GOES-16  and GOES-17)
+# - Since  April 2, 2019 
+# - FULL DISK every 10 minutes 
+# - CONUS every 5 minutes
+
+# Mode 4 
+# - Continuous 5-minute full disk imagery 
+# - No mesoscale and CONUS produced 
+# - October 1 2018
+# --> Useful to test TIMEFRAME INTERPOLATION vs. OBSERVED
+
+# Docs
+# - https://docs.opendata.aws/noaa-goes16/cics-readme.html
+
+# sunpy users
+
+# JBRAVO EXAMPLE template
+https://jhbravo.gitlab.io/geostationary-images/
+
 #--------------------------------------------------------------------------.
 ### File size statistics
 
@@ -93,10 +134,11 @@ G_GLM = goes_nearesttime('2021-01-01 12:00', satellite='G16', product='GLM')
 ### goes-mirror (JUSSI)
 # https://github.com/meteoswiss-mdr/goesmirror/blob/master/goesmirror/goesmirror.py
 
-
-### GOES CLI (query and download)
+### goesaws CLI (query and download)
 # https://github.com/mnichol3/goesaws
+# https://github.com/mnichol3/goesaws/blob/master/goesaws/goesawsinterface.py
 
+####--------------------------------------------------------------------------.
 ### Plot image from GIBBS 
 # - https://www.ncdc.noaa.gov/gibbs/availability/2022-01-10
 # - https://github.com/space-physics/GOESplot/blob/main/src/goesplot/io.py
@@ -173,6 +215,94 @@ G_GLM = goes_nearesttime('2021-01-01 12:00', satellite='G16', product='GLM')
 # adlfs
 # # adlfs
 
+# https://github.com/fsspec
+# s3fs # instead of boto3 
+# https://s3fs.readthedocs.io/en/latest/
+# gcsfs # instead of ... ? 
+# https://gcsfs.readthedocs.io/en/latest/index.html
+# adlfs
+# https://github.com/fsspec/adlfs 
+
+import xarray as xr
+import requests
+import netCDF4
+import boto3
+def get_s3_keys(bucket, prefix = ''):
+    """
+    Generate the keys in an S3 bucket.
+
+    :param bucket: Name of the S3 bucket.
+    :param prefix: Only fetch keys that start with this prefix (optional).
+    """
+    s3 = boto3.client('s3')
+    kwargs = {'Bucket': bucket}
+    if isinstance(prefix, str):
+        kwargs['Prefix'] = prefix
+
+    while True:
+        resp = s3.list_objects_v2(**kwargs)
+        for obj in resp['Contents']:
+            key = obj['Key']
+            if key.startswith(prefix):
+                yield key
+        try:
+            kwargs['ContinuationToken'] = resp['NextContinuationToken']
+        except KeyError:
+            break
+                                         
+keys = get_s3_keys(bucket_name, prefix = prefix)
+
+resp = requests.get(filepath)
+file_name = key.split('/')[-1].split('.')[0]
+
+nc4_ds = netCDF4.Dataset(file_name, memory = resp.content)
+store = xr.backends.NetCDF4DataStore(nc4_ds)
+DS = xr.open_dataset(store)
+
 ##----------------------------------------------------------------------------.
 #### QUery data from https 
 # https://stackoverflow.com/questions/11023530/python-to-list-http-files-and-directories 
+
+
+#### Download via boto3 
+## To reduce bandwidth usage, reduce max_concurrency 
+#          to increase usage, increase max_concurrency
+# Threads to implement concurrency
+max_concurrency=5
+config = TransferConfig(use_threads=True,
+                        max_concurrency = max_concurrency)
+
+
+
+# Download an S3 object
+s3 = boto3.client('s3')
+s3.download_file('BUCKET_NAME', 'OBJECT_NAME', 'FILE_NAME', Config=config)
+ 
+## boto3 _download_file 
+s3_client = boto3.resource('s3')
+my_bucket = s3_client.Bucket(bucket_name)
+my_bucket.download_file(key, filename)
+ 
+s3_client = boto3.client('s3')
+s3_client.download_file(bucket_name, key, filename)
+ 
+# Resources 
+# - High level service class
+# - High level clients are not thread safe.
+# - Initiate a client in each thread
+s3 = boto3.resource('s3') 
+
+# Client
+# - Low-level service class
+# - Low level clients are thread safe. 
+# - When using a low-level client, it is recommended to instantiate your client 
+#   then pass that client object to each of your threads.
+s3 = boto3.client('3')
+s3 = boto3.resource('s3')
+            
+# Customized Session 
+# - Initiate AWS connectivity
+session = boto3.session.Session()
+s3 = session.resource('s3') 
+s3 = session.client('3')
+s3 = session.resource('s3')
