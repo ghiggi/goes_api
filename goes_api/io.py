@@ -1,10 +1,19 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Created on Sat Feb 26 17:30:43 2022
 
-@author: ghiggi
-"""
+# Copyright (c) 2022 Ghiggi Gionata
+
+# goes_api is free software: you can redistribute it and/or modify it under the
+# terms of the GNU General Public License as published by the Free Software
+# Foundation, either version 3 of the License, or (at your option) any later
+# version.
+#
+# goes_api is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
+# A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along with
+# goes_api. If not, see <http://www.gnu.org/licenses/>.
 import os
 import fsspec
 import datetime
@@ -74,26 +83,35 @@ BUCKET_PROTOCOLS = ["gcs", "s3"]
 
 
 def available_protocols():
+    """Return a list of available cloud bucket protocols."""
     return BUCKET_PROTOCOLS
 
 
 def available_sensors():
+    """Return a list of available sensors."""
     from goes_api.listing import PRODUCTS
 
     return list(PRODUCTS.keys())
 
 
 def available_satellites():
+    """Return a list of available satellites."""
     return list(_satellites.keys())
 
 
 def available_sectors(product=None):
+    """Return a list of available sectors.
+
+    If `product` is specified, it returns the sectors available for such specific
+    product.
+    """
     from goes_api.listing import ABI_L2_SECTOR_EXCEPTIONS
 
     sectors_keys = list(_sectors.keys())
     if product is None:
         return sectors_keys
     else:
+        product = _check_product(product)
         specific_sectors = ABI_L2_SECTOR_EXCEPTIONS.get(product)
         if specific_sectors is None:
             return sectors_keys
@@ -102,6 +120,12 @@ def available_sectors(product=None):
 
 
 def available_product_levels(sensors=None):
+    """Return a list of available product levels.
+
+    If `sensors` is specified, it returns the product levels available for
+    the specified set of sensors.
+    """
+
     from goes_api.listing import PRODUCTS
 
     if sensors is None:
@@ -109,9 +133,11 @@ def available_product_levels(sensors=None):
     else:
         if isinstance(sensors, str):
             sensors = [sensors]
-        return np.unique(
-            np.concatenate([list(PRODUCTS[sensor].keys()) for sensor in sensors])
-        ).tolist()
+        product_levels = np.concatenate(
+            [list(PRODUCTS[sensor].keys()) for sensor in sensors]
+        )
+        product_levels = np.unique(product_levels).tolist()
+        return product_levels
 
 
 def available_scan_modes():
@@ -134,15 +160,27 @@ def available_scan_modes():
 
 
 def available_channels():
+    """Return a list of available ABI channels."""
     channels = list(_channels.keys())
     return channels
 
 
 def available_products(sensors=None, product_levels=None):
-    return _get_products(sensors=sensors, product_levels=product_levels)
+    """Return a list of available products.
+
+    Specifying `sensors` and/or `product_levels` allows to retrieve only a
+    specific subset of the list.
+    """
+    # Get product listing dictionary
+    products_dict = get_dict_product_sensor(
+        sensors=sensors, product_levels=product_levels
+    )
+    products = list(products_dict.keys())
+    return products
 
 
-def available_group_keys(sensor=None, product_levels=None):
+def available_group_keys():
+    """Return a list of available group_keys."""
     group_keys = [
         "system_environment",
         "sensor",  # ABI
@@ -158,6 +196,7 @@ def available_group_keys(sensor=None, product_levels=None):
 
 
 def available_connection_types():
+    """Return a list of available connect_type to connect to cloud buckets."""
     return ["bucket", "https", "nc_bytes"]
 
 
@@ -166,6 +205,7 @@ def available_connection_types():
 
 
 def _check_protocol(protocol):
+    """Check protocol validity."""
     if protocol is not None:
         if not isinstance(protocol, str):
             raise TypeError("`protocol` must be a string.")
@@ -177,6 +217,7 @@ def _check_protocol(protocol):
 
 
 def _check_base_dir(base_dir):
+    """Check base_dir validity."""
     if base_dir is not None:
         if not isinstance(base_dir, str):
             raise TypeError("`base_dir` must be a string.")
@@ -188,6 +229,7 @@ def _check_base_dir(base_dir):
 
 
 def _check_satellite(satellite):
+    """Check satellite validity."""
     if not isinstance(satellite, str):
         raise TypeError("`satellite` must be a string.")
     # Retrieve satellite key accounting for possible aliases
@@ -203,6 +245,7 @@ def _check_satellite(satellite):
 
 
 def _check_sector(sector, product=None):
+    """Check sector validity."""
     if not isinstance(sector, str):
         raise TypeError("`sector` must be a string.")
     # Retrieve sector key accounting for possible aliases
@@ -226,6 +269,7 @@ def _check_sector(sector, product=None):
 
 
 def _check_sensor(sensor):
+    """Check sensor validity."""
     if not isinstance(sensor, str):
         raise TypeError("`sensor` must be a string.")
     valid_sensors = available_sensors()
@@ -236,6 +280,7 @@ def _check_sensor(sensor):
 
 
 def _check_sensors(sensors):
+    """Check sensors validity."""
     if isinstance(sensors, str):
         sensors = [sensors]
     sensors = [_check_sensor(sensor) for sensor in sensors]
@@ -243,13 +288,14 @@ def _check_sensors(sensors):
 
 
 def _check_product_level(product_level, product=None):
+    """Check product_level validity."""
     if not isinstance(product_level, str):
         raise TypeError("`product_level` must be a string.")
     product_level = product_level.capitalize()
     if product_level not in ["L1b", "L2"]:
         raise ValueError("Available product levels are ['L1b', 'L2'].")
     if product is not None:
-        if product not in _get_product_level_products_dict()[product_level]:
+        if product not in get_dict_product_level_products()[product_level]:
             raise ValueError(
                 f"`product_level` '{product_level}' does not include product '{product}'."
             )
@@ -257,6 +303,7 @@ def _check_product_level(product_level, product=None):
 
 
 def _check_product_levels(product_levels):
+    """Check product_levels validity."""
     if isinstance(product_levels, str):
         product_levels = [product_levels]
     product_levels = [
@@ -266,6 +313,7 @@ def _check_product_levels(product_levels):
 
 
 def _check_product(product, sensor=None, product_level=None):
+    """Check product validity."""
     if not isinstance(product, str):
         raise TypeError("`product` must be a string.")
     valid_products = available_products(sensors=sensor, product_levels=product_level)
@@ -288,6 +336,7 @@ def _check_product(product, sensor=None, product_level=None):
 
 
 def _check_time(time):
+    """Check time validity."""
     if not isinstance(time, (datetime.datetime, datetime.date, str)):
         raise TypeError(
             "Specify time with datetime.datetime objects or a "
@@ -305,6 +354,7 @@ def _check_time(time):
 
 
 def _check_start_end_time(start_time, end_time):
+    """Check start_time and end_time validity."""
     # Format input
     start_time = _check_time(start_time)
     end_time = _check_time(end_time)
@@ -323,6 +373,7 @@ def _check_start_end_time(start_time, end_time):
 
 
 def _check_channel(channel):
+    """Check channel validity."""
     if not isinstance(channel, str):
         raise TypeError("`channel` must be a string.")
     # Check channel follow standard name
@@ -343,6 +394,7 @@ def _check_channel(channel):
 
 
 def _check_channels(channels=None, sensor=None):
+    """Check channels validity."""
     if channels is None:
         return channels
     if sensor is not None:
@@ -355,6 +407,7 @@ def _check_channels(channels=None, sensor=None):
 
 
 def _check_scan_mode(scan_mode):
+    """Check scan_mode validity."""
     if not isinstance(scan_mode, str):
         raise TypeError("`scan_mode` must be a string.")
     # Check channel follow standard name
@@ -367,6 +420,7 @@ def _check_scan_mode(scan_mode):
 
 
 def _check_scan_modes(scan_modes=None, sensor=None):
+    """Check scan_modes validity."""
     if scan_modes is None:
         return scan_modes
     if sensor is not None:
@@ -379,6 +433,7 @@ def _check_scan_modes(scan_modes=None, sensor=None):
 
 
 def _check_scene_abbr(scene_abbr, sensor=None, sector=None):
+    """Check ABI mesoscale sector scene_abbr validity."""
     if scene_abbr is None:
         return scene_abbr
     if sensor is not None:
@@ -402,7 +457,7 @@ def _check_scene_abbr(scene_abbr, sensor=None, sector=None):
 def _check_filter_parameters(filter_parameters, sensor, sector):
     """Check filter parameters validity.
 
-    It ensures that scan_modes, channels, scene_abbr are valid list (or None).
+    It ensures that scan_modes, channels and scene_abbr are valid lists (or None).
     """
     if not isinstance(filter_parameters, dict):
         raise TypeError("filter_parameters must be a dictionary.")
@@ -421,13 +476,22 @@ def _check_filter_parameters(filter_parameters, sensor, sector):
 
 
 def _check_group_by_key(group_by_key, sensor=None, product_level=None):
+    """Check group_by_key validity."""
+    # TODO: check why sensor and product_level are required ...
     if not isinstance(group_by_key, (str, type(None))):
         raise TypeError("`group_by_key`must be a string or None.")
-    # TODO: Add checks !!!
+    if group_by_key is not None:
+        valid_group_by_key = available_group_keys()
+        if group_by_key not in valid_group_by_key:
+            raise ValueError(
+                f"{group_by_key} is not a valid group_by_key. "
+                f"Valid group_by_key are {valid_group_by_key}."
+            )
     return group_by_key
 
 
 def _check_connection_type(connection_type, protocol):
+    """Check cloud bucket connection_type validity."""
     if not isinstance(connection_type, (str, type(None))):
         raise TypeError("`connection_type` must be a string (or None).")
     if protocol is None:
@@ -445,6 +509,7 @@ def _check_connection_type(connection_type, protocol):
 
 
 def _check_unique_scan_mode(fpath_dict, sensor, product_level):
+    """Check files have unique scan_mode validity."""
     # TODO: raise information when it changes
     list_datetime = list(fpath_dict.keys())
     fpaths_examplars = [fpath_dict[tt][0] for tt in list_datetime]
@@ -459,6 +524,7 @@ def _check_unique_scan_mode(fpath_dict, sensor, product_level):
 
 
 def _check_interval_regularity(list_datetime):
+    """Check regularity of a list of timesteps."""
     # TODO: raise info when missing between ... and ...
     if len(list_datetime) < 2:
         raise ValueError("Provide a list with at least 2 datetime.")
@@ -515,7 +581,13 @@ def get_available_online_product(protocol, satellite):
     return products_dict
 
 
-def _get_products_listing_dict(sensors=None, product_levels=None):
+def get_dict_info_products(sensors=None, product_levels=None):
+    """Return a dictionary with sensors, product_level and product informations.
+
+    The dictionary has structure {sensor: {product_level: [products]}}
+    Specifying `sensors` and/or `product_levels` allows to retrieve only
+    specific portions of the dictionary.
+    """
     from goes_api.listing import PRODUCTS
 
     if sensors is None and product_levels is None:
@@ -540,9 +612,15 @@ def _get_products_listing_dict(sensors=None, product_levels=None):
     return listing_dict
 
 
-def _get_products_sensor_dict(sensors=None, product_levels=None):
+def get_dict_product_sensor(sensors=None, product_levels=None):
+    """Return a dictionary with available product and corresponding sensors.
+
+    The dictionary has structure {product: sensor}.
+    Specifying `sensors` and/or `product_levels` allows to retrieve only a
+    specific subset of the dictionary.
+    """
     # Get product listing dictionary
-    products_listing_dict = _get_products_listing_dict(
+    products_listing_dict = get_dict_info_products(
         sensors=sensors, product_levels=product_levels
     )
     # Retrieve dictionary
@@ -554,9 +632,15 @@ def _get_products_sensor_dict(sensors=None, product_levels=None):
     return products_sensor_dict
 
 
-def _get_sensor_products_dict(sensors=None, product_level=None):
-    products_sensor_dict = _get_products_sensor_dict(
-        sensors=sensors, product_level=product_level
+def get_dict_sensor_products(sensors=None, product_levels=None):
+    """Return a dictionary with available sensors and corresponding products.
+
+    The dictionary has structure {sensor: [products]}.
+    Specifying `sensors` and/or `product_levels` allows to retrieve only a
+    specific subset of the dictionary.
+    """
+    products_sensor_dict = get_dict_product_sensor(
+        sensors=sensors, product_levels=product_levels
     )
     sensor_product_dict = {}
     for k in set(products_sensor_dict.values()):
@@ -566,9 +650,15 @@ def _get_sensor_products_dict(sensors=None, product_level=None):
     return sensor_product_dict
 
 
-def _get_products_product_level_dict(sensors=None, product_levels=None):
+def get_dict_product_product_level(sensors=None, product_levels=None):
+    """Return a dictionary with available products and corresponding product_level.
+
+    The dictionary has structure {product: product_level}.
+    Specifying `sensors` and/or `product_levels` allows to retrieve only a
+    specific subset of the dictionary.
+    """
     # Get product listing dictionary
-    products_listing_dict = _get_products_listing_dict(
+    products_listing_dict = get_dict_info_products(
         sensors=sensors, product_levels=product_levels
     )
     # Retrieve dictionary
@@ -580,8 +670,16 @@ def _get_products_product_level_dict(sensors=None, product_levels=None):
     return products_product_level_dict
 
 
-def _get_product_level_products_dict():
-    products_product_level_dict = _get_products_product_level_dict()
+def get_dict_product_level_products(sensors=None, product_levels=None):
+    """Return a dictionary with available product_levels and corresponding products.
+
+    The dictionary has structure {product_level: [products]}.
+    Specifying `sensors` and/or `product_levels` allows to retrieve only a
+    specific subset of the dictionary.
+    """
+    products_product_level_dict = get_dict_product_product_level(
+        sensors=sensors, product_levels=product_levels
+    )
     product_level_product_dict = {}
     for k in set(products_product_level_dict.values()):
         product_level_product_dict[k] = []
@@ -590,18 +688,21 @@ def _get_product_level_products_dict():
     return product_level_product_dict
 
 
-def _get_products(sensors=None, product_levels=None):
-    # Get product listing dictionary
-    products_dict = _get_products_sensor_dict(
-        sensors=sensors, product_levels=product_levels
-    )
-    products = list(products_dict.keys())
-    return products
-
-
 ####--------------------------------------------------------------------------.
 #### Filesystems, buckets and directory structures
 def get_filesystem(protocol, fs_args={}):
+    """
+    Define ffspec filesystem.
+
+    protocol : str
+       String specifying the cloud bucket storage from which to retrieve
+       the data. It must be specified if not searching data on local storage.
+       Use `goes_api.available_protocols()` to retrieve available protocols.
+    fs_args : dict, optional
+       Dictionary specifying optional settings to initiate the fsspec.filesystem.
+       The default is an empty dictionary. Anonymous connection is set by default.
+
+    """
     if not isinstance(fs_args, dict):
         raise TypeError("fs_args must be a dictionary.")
     if protocol == "s3":

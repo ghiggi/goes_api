@@ -1,13 +1,22 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Created on Sat Mar  5 13:21:15 2022
 
-@author: ghiggi
-"""
+# Copyright (c) 2022 Ghiggi Gionata
+
+# goes_api is free software: you can redistribute it and/or modify it under the
+# terms of the GNU General Public License as published by the Free Software
+# Foundation, either version 3 of the License, or (at your option) any later
+# version.
+#
+# goes_api is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
+# A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along with
+# goes_api. If not, see <http://www.gnu.org/licenses/>.
+
 import os
 import time
-import dask
 import numpy as np
 import concurrent.futures
 from concurrent.futures import ThreadPoolExecutor
@@ -30,11 +39,37 @@ from .io import (
 
 
 def create_local_directories(fpaths, exist_ok=True):
+    """Create recursively local directories for the provided filepaths."""
     _ = [os.makedirs(os.path.dirname(fpath), exist_ok=True) for fpath in fpaths]
     return None
 
 
 def rm_corrupted_files(local_fpaths, bucket_fpaths, fs, return_corrupted_fpaths=True):
+    """
+    Check and remove files from local disk which are corrupted.
+
+    Corruption is evaluated by comparing the size of data on local storage against
+    size of data located in the cloud bucket.
+
+    Parameters
+    ----------
+    local_fpaths : list
+        List of filepaths on local storage.
+    bucket_fpaths : list
+        List of filepaths on cloud bucket.
+    fs : ffspec.FileSystem
+        ffspec filesystem instance.
+        It must be cohrenet with the cloud bucket address of bucket_fpaths.
+    return_corrupted_fpaths : bool, optional
+        If True, it returns the list of corrupted files.
+        If False, it returns the list of valid files.
+        The default is True.
+
+    Returns
+    -------
+    (list_<valid/corrupted>_local_filepaths, list_<valid/corrupted>_bucket_filepaths)
+
+    """
     l_corrupted_local = []
     l_corrupted_bucket = []
     l_valid_local = []
@@ -58,11 +93,13 @@ def rm_corrupted_files(local_fpaths, bucket_fpaths, fs, return_corrupted_fpaths=
 
 
 def _check_download_protocol(protocol):
+    """ "Check protocol validity for download."""
     if protocol not in ["gcs", "s3"]:
         raise ValueError("Please specify either 'gcs' or 's3' protocol for download.")
 
 
 def _select_missing_fpaths(local_fpaths, bucket_fpaths):
+    """Return local and bucket filepaths of files not present on the local storage."""
     # Keep only non-existing local files
     idx_not_exist = [not os.path.exists(filepath) for filepath in local_fpaths]
     local_fpaths = list(np.array(local_fpaths)[idx_not_exist])
@@ -71,12 +108,14 @@ def _select_missing_fpaths(local_fpaths, bucket_fpaths):
 
 
 def _rm_bucket_address(fpath):
+    """Remove the bucket acronym (i.e. s3://) from fpaths"""
     fel = fpath.split("/")[3:]
     fpath = os.path.join(*fel)
     return fpath
 
 
 def _get_local_from_bucket_fpaths(base_dir, satellite, bucket_fpaths):
+    """Convert cloud bucket filepaths to local storage filepaths."""
     satellite = satellite.upper()
     fpaths = [
         os.path.join(base_dir, satellite, _rm_bucket_address(fpath))
@@ -87,20 +126,21 @@ def _get_local_from_bucket_fpaths(base_dir, satellite, bucket_fpaths):
 
 def _fs_get_parallel(bucket_fpaths, local_fpaths, fs, n_threads=10, progress_bar=True):
     """
-    Run fs.get download asynchronously in parallel using multithreading.
+    Run fs.get() asynchronously in parallel using multithreading.
 
     Parameters
     ----------
     bucket_fpaths : list
-        List of bucket fpaths to download.
+        List of bucket filepaths to download.
     local_fpath : list
-        List of fpaths where to save locally the data.
+        List of filepaths where to save data on local storage.
     n_threads : int, optional
-        Number of parallel download. The default is 10.
+        Number of files to be downloaded concurrently.
+        The default is 10. The max value is set automatically to 50.
 
     Returns
     -------
-    List of commands which didn't complete.
+    List of cloud bucket filepaths which were not downloaded.
     """
     # Check n_threads
     if n_threads < 1:
@@ -152,6 +192,63 @@ def download_files(
     filter_parameters={},
     fs_args={},
 ):
+    """
+    Donwload files from a cloud bucket storage.
+
+    Parameters
+    ----------
+    base_dir : str
+        Base directory path where the <GOES-**>/<product>/... directory structure
+        should be created.
+    protocol : str
+        String specifying the cloud bucket storage from which to retrieve
+        the data.
+        Use `goes_api.available_protocols()` to retrieve available protocols.
+    fs_args : dict, optional
+        Dictionary specifying optional settings to initiate the fsspec.filesystem.
+        The default is an empty dictionary. Anonymous connection is set by default.
+    satellite : str
+        The name of the satellite.
+        Use `goes_api.available_satellites()` to retrieve the available satellites.
+    sensor : str
+        Satellite sensor.
+        See `goes_api.available_sensors()` for available sensors.
+    product_level : str
+        Product level.
+        See `goes_api.available_product_levels()` for available product levels.
+    product : str
+        The name of the product to retrieve.
+        See `goes_api.available_products()` for a list of available products.
+    sector : str
+        The acronym of the sector for which to retrieve the files.
+        See `goes_api.available_sectors()` for a list of available sectors.
+    start_time : datetime.datetime
+        The start (inclusive) time of the interval period for retrieving the filepaths.
+    end_time : datetime.datetime
+        The end (exclusive) time of the interval period for retrieving the filepaths.
+    filter_parameters : dict, optional
+        Dictionary specifying option filtering parameters.
+        Valid keys includes: `channels`, `scan_modes`, `scene_abbr`.
+        The default is a empty dictionary (no filtering).
+    n_threads: int
+        Number of files to be downloaded concurrently.
+        The default is 20. The max value is set automatically to 50.
+    force_download: bool
+        If True, it downloads and overwrites the files already existing on local storage.
+        If False, it does not downloads files already existing on local storage.
+        The default is False.
+    check_data_integrity: bool
+        If True, it checks that the downloaded files are not corrupted.
+        Corruption is assessed by comparing file size between local and cloud bucket storage.
+        The default is True.
+    progress_bar: bool
+        If True, it displays a progress bar showing the download status.
+        The default is True.
+    verbose : bool, optional
+        If True, it print some information concerning the download process.
+        The default is False.
+
+    """
     # -------------------------------------------------------------------------.
     # Checks
     _check_download_protocol(protocol)
@@ -288,10 +385,66 @@ def download_closest_files(
     n_threads=20,
     force_download=False,
     check_data_integrity=True,
+    progress_bar=True,
     verbose=True,
     filter_parameters={},
     fs_args={},
 ):
+    """
+    Donwload files from a cloud bucket storage closest to the specified time.
+
+    Parameters
+    ----------
+    base_dir : str
+        Base directory path where the <GOES-**>/<product>/... directory structure
+        should be created.
+    protocol : str
+        String specifying the cloud bucket storage from which to retrieve
+        the data.
+        Use `goes_api.available_protocols()` to retrieve available protocols.
+    fs_args : dict, optional
+        Dictionary specifying optional settings to initiate the fsspec.filesystem.
+        The default is an empty dictionary. Anonymous connection is set by default.
+    satellite : str
+        The name of the satellite.
+        Use `goes_api.available_satellites()` to retrieve the available satellites.
+    sensor : str
+        Satellite sensor.
+        See `goes_api.available_sensors()` for available sensors.
+    product_level : str
+        Product level.
+        See `goes_api.available_product_levels()` for available product levels.
+    product : str
+        The name of the product to retrieve.
+        See `goes_api.available_products()` for a list of available products.
+    sector : str
+        The acronym of the sector for which to retrieve the files.
+        See `goes_api.available_sectors()` for a list of available sectors.
+    time : datetime.datetime
+        The time for which you desire to retrieve the files with closest start_time.
+    filter_parameters : dict, optional
+        Dictionary specifying option filtering parameters.
+        Valid keys includes: `channels`, `scan_modes`, `scene_abbr`.
+        The default is a empty dictionary (no filtering).
+    n_threads: int
+        Number of files to be downloaded concurrently.
+        The default is 20. The max value is set automatically to 50.
+    force_download: bool
+        If True, it downloads and overwrites the files already existing on local storage.
+        If False, it does not downloads files already existing on local storage.
+        The default is False.
+    check_data_integrity: bool
+        If True, it checks that the downloaded files are not corrupted.
+        Corruption is assessed by comparing file size between local and cloud bucket storage.
+        The default is True.
+    progress_bar: bool
+        If True, it displays a progress bar showing the download status.
+        The default is True.
+    verbose : bool, optional
+        If True, it print some information concerning the download process.
+        The default is False.
+
+    """
     # Checks
     _check_download_protocol(protocol)
     # Get closest time
@@ -322,6 +475,7 @@ def download_closest_files(
         end_time=closest_time,
         n_threads=n_threads,
         force_download=force_download,
+        progress_bar=progress_bar,
         check_data_integrity=check_data_integrity,
         verbose=verbose,
     )
@@ -339,10 +493,64 @@ def download_latest_files(
     n_threads=20,
     force_download=False,
     check_data_integrity=True,
+    progress_bar=True,
     verbose=True,
     filter_parameters={},
     fs_args={},
 ):
+    """
+    Donwload latest available files from a cloud bucket storage.
+
+    Parameters
+    ----------
+    base_dir : str
+        Base directory path where the <GOES-**>/<product>/... directory structure
+        should be created.
+    protocol : str
+        String specifying the cloud bucket storage from which to retrieve
+        the data.
+        Use `goes_api.available_protocols()` to retrieve available protocols.
+    fs_args : dict, optional
+        Dictionary specifying optional settings to initiate the fsspec.filesystem.
+        The default is an empty dictionary. Anonymous connection is set by default.
+    satellite : str
+        The name of the satellite.
+        Use `goes_api.available_satellites()` to retrieve the available satellites.
+    sensor : str
+        Satellite sensor.
+        See `goes_api.available_sensors()` for available sensors.
+    product_level : str
+        Product level.
+        See `goes_api.available_product_levels()` for available product levels.
+    product : str
+        The name of the product to retrieve.
+        See `goes_api.available_products()` for a list of available products.
+    sector : str
+        The acronym of the sector for which to retrieve the files.
+        See `goes_api.available_sectors()` for a list of available sectors.
+    filter_parameters : dict, optional
+        Dictionary specifying option filtering parameters.
+        Valid keys includes: `channels`, `scan_modes`, `scene_abbr`.
+        The default is a empty dictionary (no filtering).
+    n_threads: int
+        Number of files to be downloaded concurrently.
+        The default is 20. The max value is set automatically to 50.
+    force_download: bool
+        If True, it downloads and overwrites the files already existing on local storage.
+        If False, it does not downloads files already existing on local storage.
+        The default is False.
+    check_data_integrity: bool
+        If True, it checks that the downloaded files are not corrupted.
+        Corruption is assessed by comparing file size between local and cloud bucket storage.
+        The default is True.
+    progress_bar: bool
+        If True, it displays a progress bar showing the download status.
+        The default is True.
+    verbose : bool, optional
+        If True, it print some information concerning the download process.
+        The default is False.
+
+    """
     # Checks
     _check_download_protocol(protocol)
     # Get closest time
@@ -393,10 +601,80 @@ def download_previous_files(
     n_threads=20,
     force_download=False,
     check_data_integrity=True,
+    progress_bar=True,
     verbose=True,
     filter_parameters={},
     fs_args={},
 ):
+    """
+    Donwload files for N timesteps previous to start_time.
+
+    Parameters
+    ----------
+    start_time : datetime
+        The start_time from which to search for previous files.
+        The start_time should correspond exactly to file start_time if check_consistency=True
+    N : int
+        The number of previous timesteps for which to download the files.
+    include_start_time: bool, optional
+        Wheter to include (and count) start_time in the N timesteps for which
+        file are downloaded.
+        The default is False.
+    check_consistency : bool, optional
+        Check for consistency of the returned files. The default is True.
+        It check that:
+         - start_time correspond exactly to the start_time of the files;
+         - the regularity of the previous timesteps, with no missing timesteps;
+         - the regularity of the scan mode, i.e. not switching from M3 to M6,
+         - if sector == M, the mesoscale domains are not changing within the considered period.
+    base_dir : str
+        Base directory path where the <GOES-**>/<product>/... directory structure
+        should be created.
+    protocol : str
+        String specifying the cloud bucket storage from which to retrieve
+        the data.
+        Use `goes_api.available_protocols()` to retrieve available protocols.
+    fs_args : dict, optional
+        Dictionary specifying optional settings to initiate the fsspec.filesystem.
+        The default is an empty dictionary. Anonymous connection is set by default.
+    satellite : str
+        The name of the satellite.
+        Use `goes_api.available_satellites()` to retrieve the available satellites.
+    sensor : str
+        Satellite sensor.
+        See `goes_api.available_sensors()` for available sensors.
+    product_level : str
+        Product level.
+        See `goes_api.available_product_levels()` for available product levels.
+    product : str
+        The name of the product to retrieve.
+        See `goes_api.available_products()` for a list of available products.
+    sector : str
+        The acronym of the sector for which to retrieve the files.
+        See `goes_api.available_sectors()` for a list of available sectors.
+    filter_parameters : dict, optional
+        Dictionary specifying option filtering parameters.
+        Valid keys includes: `channels`, `scan_modes`, `scene_abbr`.
+        The default is a empty dictionary (no filtering).
+    n_threads: int
+        Number of files to be downloaded concurrently.
+        The default is 20. The max value is set automatically to 50.
+    force_download: bool
+        If True, it downloads and overwrites the files already existing on local storage.
+        If False, it does not downloads files already existing on local storage.
+        The default is False.
+    check_data_integrity: bool
+        If True, it checks that the downloaded files are not corrupted.
+        Corruption is assessed by comparing file size between local and cloud bucket storage.
+        The default is True.
+    progress_bar: bool
+        If True, it displays a progress bar showing the download status.
+        The default is True.
+    verbose : bool, optional
+        If True, it print some information concerning the download process.
+        The default is False.
+
+    """
     # Checks
     _check_download_protocol(protocol)
     # Get previous files dictionary
@@ -457,10 +735,80 @@ def download_next_files(
     n_threads=20,
     force_download=False,
     check_data_integrity=True,
+    progress_bar=True,
     verbose=True,
     filter_parameters={},
     fs_args={},
 ):
+    """
+    Donwload files for N timesteps after start_time.
+
+    Parameters
+    ----------
+    start_time : datetime
+        The start_time from which search for next files.
+        The start_time should correspond exactly to file start_time if check_consistency=True
+    N : int
+        The number of next timesteps for which to retrieve the files.
+    include_start_time: bool, optional
+        Wheter to include (and count) start_time in the N returned timesteps.
+        The default is False.
+    check_consistency : bool, optional
+        Check for consistency of the returned files. The default is True.
+        It check that:
+         - start_time correspond exactly to the start_time of the files;
+         - the regularity of the previous timesteps, with no missing timesteps;
+         - the regularity of the scan mode, i.e. not switching from M3 to M6,
+         - if sector == M, the mesoscale domains are not changing within the considered period.
+
+    base_dir : str
+        Base directory path where the <GOES-**>/<product>/... directory structure
+        should be created.
+    protocol : str
+        String specifying the cloud bucket storage from which to retrieve
+        the data.
+        Use `goes_api.available_protocols()` to retrieve available protocols.
+    fs_args : dict, optional
+        Dictionary specifying optional settings to initiate the fsspec.filesystem.
+        The default is an empty dictionary. Anonymous connection is set by default.
+    satellite : str
+        The name of the satellite.
+        Use `goes_api.available_satellites()` to retrieve the available satellites.
+    sensor : str
+        Satellite sensor.
+        See `goes_api.available_sensors()` for available sensors.
+    product_level : str
+        Product level.
+        See `goes_api.available_product_levels()` for available product levels.
+    product : str
+        The name of the product to retrieve.
+        See `goes_api.available_products()` for a list of available products.
+    sector : str
+        The acronym of the sector for which to retrieve the files.
+        See `goes_api.available_sectors()` for a list of available sectors.
+    filter_parameters : dict, optional
+        Dictionary specifying option filtering parameters.
+        Valid keys includes: `channels`, `scan_modes`, `scene_abbr`.
+        The default is a empty dictionary (no filtering).
+    n_threads: int
+        Number of files to be downloaded concurrently.
+        The default is 20. The max value is set automatically to 50.
+    force_download: bool
+        If True, it downloads and overwrites the files already existing on local storage.
+        If False, it does not downloads files already existing on local storage.
+        The default is False.
+    check_data_integrity: bool
+        If True, it checks that the downloaded files are not corrupted.
+        Corruption is assessed by comparing file size between local and cloud bucket storage.
+        The default is True.
+    progress_bar: bool
+        If True, it displays a progress bar showing the download status.
+        The default is True.
+    verbose : bool, optional
+        If True, it print some information concerning the download process.
+        The default is False.
+
+    """
     # Checks
     _check_download_protocol(protocol)
     # Get previous files dictionary
