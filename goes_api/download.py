@@ -25,6 +25,7 @@ from tqdm import tqdm
 from .utils.time import get_list_daily_time_blocks
 from .io import (
     get_filesystem,
+    remove_bucket_address,
     find_files,
     find_closest_start_time,
     find_latest_start_time,
@@ -44,7 +45,7 @@ def create_local_directories(fpaths, exist_ok=True):
     return None
 
 
-def rm_corrupted_files(local_fpaths, bucket_fpaths, fs, return_corrupted_fpaths=True):
+def remove_corrupted_files(local_fpaths, bucket_fpaths, fs, return_corrupted_fpaths=True):
     """
     Check and remove files from local disk which are corrupted.
 
@@ -107,18 +108,11 @@ def _select_missing_fpaths(local_fpaths, bucket_fpaths):
     return local_fpaths, bucket_fpaths
 
 
-def _rm_bucket_address(fpath):
-    """Remove the bucket acronym (i.e. s3://) from fpaths"""
-    fel = fpath.split("/")[3:]
-    fpath = os.path.join(*fel)
-    return fpath
-
-
 def _get_local_from_bucket_fpaths(base_dir, satellite, bucket_fpaths):
     """Convert cloud bucket filepaths to local storage filepaths."""
     satellite = satellite.upper()
     fpaths = [
-        os.path.join(base_dir, satellite, _rm_bucket_address(fpath))
+        os.path.join(base_dir, satellite, remove_bucket_address(fpath))
         for fpath in bucket_fpaths
     ]
     return fpaths
@@ -306,7 +300,7 @@ def download_files(
         list_all_bucket_fpaths = list_all_bucket_fpaths + bucket_fpaths
 
         # Remove corrupted data
-        _ = rm_corrupted_files(
+        _ = remove_corrupted_files(
             local_fpaths=local_fpaths, bucket_fpaths=bucket_fpaths, fs=fs
         )
 
@@ -356,7 +350,7 @@ def download_files(
     if check_data_integrity:
         if verbose:
             print("Checking data integrity:")
-        list_all_local_fpaths, _ = rm_corrupted_files(
+        list_all_local_fpaths, _ = remove_corrupted_files(
             list_all_local_fpaths,
             list_all_bucket_fpaths,
             fs=fs,

@@ -6,6 +6,15 @@ Created on Thu Feb 24 15:21:12 2022
 @author: ghiggi
 """
 
+## tar file: just concat of data in the files (no compression)
+## zipped: compress all file usually 
+# ffspec.TarFileSystem
+# ffspec.ZipFileSystem
+# --> backends support reading from streams ???
+
+# ERDAP SERVERS: https://github.com/IrishMarineInstitute/awesome-erddap
+# https://unidata.github.io/siphon/latest/ 
+
 ##----------------------------------------------------------------------------.
 # Direct reading from cloud storage is not currently available in Satpy
 # Users can search on remote filesystems by passing an instance of an implementation of
@@ -18,6 +27,16 @@ Created on Thu Feb 24 15:21:12 2022
 # libnetcdf for HTTP BYTE RANGE REQUESTS
 # conda install -c conda-forge "libnetcdf=4.7.4=*_105
 # https://twitter.com/dopplershift/status/1286415993347047425
+
+## ffspec 
+# - Used to perform serial requests to retrieve metadata
+# - Now perform concurrent requests -> async and faster
+# simplecache::<https> 
+# gcs://<<....> , storage_option in backend_kwargs 
+
+# Satpy issues: 
+# - https://github.com/pytroll/pytroll-examples/issues/35
+    
 
 ####----------------------------------------------------------------------------.
 #### SATPY WITH FSFILE
@@ -122,6 +141,29 @@ from satpy.readers import FSFile
 fs_files = [FSFile(open_file) for open_file in the_files]
 scn = Scene(filenames=fs_files, reader="abi_l1b")
 scn.load(["true_color_raw"])
+
+#----------------------------------------------------------
+import s3fs
+import glob
+import fsspec
+from satpy.readers import FSFile
+
+filename = 'noaa-goes16/ABI-L1b-RadC/2019/001/17/*_G16_s20190011702186*'
+
+the_files = fsspec.open_files("simplecache::s3://" + filename, s3={'anon': True})
+
+fs_files = [FSFile(open_file) for open_file in the_files]
+
+scn = Scene(filenames=fs_files, reader='abi_l1b')
+
+scn.load(['true_color_raw'])
+lscn = scn.resample('moll')
+lscn.show('true_color_raw')
+
+## netCDF byte range requests
+url = "https://noaa-goes16.s3.amazonaws.com/ABI-L1b-RadC/2019/001/00/OR_ABI-L1b-RadC-M3C14_G16_s20190010002187_e20190010004560_c20190010005009.nc#mode=bytes"
+scn = Scene(reader='abi_l1b', filenames=[url])
+
 
 # blockcache
 # --> instead of simplecache

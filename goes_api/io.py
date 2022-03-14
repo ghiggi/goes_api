@@ -755,8 +755,30 @@ def get_bucket(protocol, satellite):
     }
     return bucket_dict[protocol]
 
+def _switch_to_https_fpath(fpath, protocol): 
+    """
+    Switch bucket address with https address.
 
-def _switch_to_https_fpaths(fpaths, protocol, satellite):
+    Parameters
+    ----------
+    fpath : str
+        A single bucket filepaths.
+    protocol : str
+         String specifying the cloud bucket storage from which to retrieve
+         the data. Use `goes_api.available_protocols()` to retrieve available protocols.
+    """
+    # https://storage.googleapis.com , https://storage.cloud.google.com
+    satellite = infer_satellite_from_path(fpath)
+    https_base_url_dict = {
+        "gcs": "https://storage.cloud.google.com/gcp-public-data-{}".format(satellite),
+        "s3": "https://noaa-{}.s3.amazonaws.com".format(satellite.replace("-", "")),
+    }
+    base_url = https_base_url_dict[protocol]
+    fpath = os.path.join(base_url, fpath.split("/", 3)[3])  
+    return fpath 
+    
+
+def _switch_to_https_fpaths(fpaths, protocol):
     """
     Switch bucket address with https address.
 
@@ -767,18 +789,8 @@ def _switch_to_https_fpaths(fpaths, protocol, satellite):
     protocol : str
          String specifying the cloud bucket storage from which to retrieve
          the data. Use `goes_api.available_protocols()` to retrieve available protocols.
-    satellite : str
-         The acronym of the satellite.
-         Use `goes_api.available_satellites()` to retrieve the available satellites.
-
     """
-    # https://storage.googleapis.com , https://storage.cloud.google.com
-    https_base_url_dict = {
-        "gcs": "https://storage.cloud.google.com/gcp-public-data-{}".format(satellite),
-        "s3": "https://noaa-{}.s3.amazonaws.com".format(satellite.replace("-", "")),
-    }
-    base_url = https_base_url_dict[protocol]
-    fpaths = [os.path.join(base_url, fpath.split("/", 3)[3]) for fpath in fpaths]
+    fpaths = [_switch_to_https_fpath(fpath, protocol) for fpath in fpaths]
     return fpaths
 
 
@@ -818,9 +830,26 @@ def _get_product_dir(
     return product_dir
 
 
+def infer_satellite_from_path(path): 
+    """Infer the satellite from the file path."""
+    goes16_patterns = ['goes16', 'goes-16', 'G16']
+    goes17_patterns = ['goes17', 'goes-17', 'G17'] 
+    if np.any([pattern in path for pattern in goes16_patterns]):
+        return 'goes-16'
+    if np.any([pattern in path for pattern in goes17_patterns]):
+        return 'goes-17'
+    else:
+        raise ValueError("Unexpected GOES file path.")
+
+
+def remove_bucket_address(fpath):
+    """Remove the bucket acronym (i.e. s3://, gcs://) from the file path."""
+    fel = fpath.split("/")[3:]
+    fpath = os.path.join(*fel)
+    return fpath
+
 ####---------------------------------------------------------------------------.
 #### Filtering
-
 
 def _separate_product_scene_abbr(product_scene_abbr):
     """Return (product, scene_abbr) from <product><scene_abbr> string."""
@@ -1938,16 +1967,12 @@ def _set_connection_type(fpaths, satellite, protocol=None, connection_type=None)
         return fpaths
     if connection_type in ["https", "nc_bytes"]:
         if isinstance(fpaths, list):
-            fpaths = _switch_to_https_fpaths(
-                fpaths, protocol=protocol, satellite=satellite
-            )
+            fpaths = _switch_to_https_fpaths(fpaths, protocol=protocol)
             if connection_type == "nc_bytes":
                 fpaths = _add_nc_bytes(fpaths)
         if isinstance(fpaths, dict):
             fpaths = {
-                tt: _switch_to_https_fpaths(
-                    l_fpaths, protocol=protocol, satellite=satellite
-                )
+                tt: _switch_to_https_fpaths(l_fpaths, protocol=protocol)           
                 for tt, l_fpaths in fpaths.items()
             }
             if connection_type == "nc_bytes":

@@ -204,6 +204,14 @@ G_GLM = goes_nearesttime('2021-01-01 12:00', satellite='G16', product='GLM')
 # - https://planetarycomputer.microsoft.com/dataset/goes-cmi#Blob-Storage-Notebook 
 # 
 
+# # GOES Azure 
+# from azure.storage.blob import ContainerClient
+# storage_account_url = 'https://goeseuwest.blob.core.windows.net'
+# container_name = 'noaa-goes16'
+# goes_blob_root = storage_account_url + '/' + container_name + '/'
+# goes_container_client = ContainerClient(account_url=storage_account_url, container_name=container_name, credential=None)
+# generator = goes_container_client.list_blobs(name_starts_with=prefix)
+
 # import fsspec 
 # fs = fsspec.open("http://goeseuwest.blob.core.windows.net/noaa-goes16")
 # fs = fsspec.filesystem("http://goeseuwest.blob.core.windows.net/noaa-goes16")

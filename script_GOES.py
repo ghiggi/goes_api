@@ -49,7 +49,7 @@ channels = None
 
 # scene_abbr = None
 filter_parameters = {}
-filter_parameters["scan_modes"] = scan_mode
+filter_parameters["scan_modes"] = scan_modes
 filter_parameters["channels"] = channels
 filter_parameters["scene_abbr"] = scene_abbr
 
