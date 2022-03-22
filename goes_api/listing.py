@@ -26,7 +26,7 @@ ABI_L2_PRODUCTS = {
     "CTP": "Cloud Top Pressure",  # only F, C
     "DMW": "Derived Motion Winds",
     "DMWV": "Derived Motion Winds (Clear Sky)",
-    "DSI": "Derived Stability Indices",  # CAPE, KI, LI. SI, TT
+    "DSI": "Derived Stability Indices", 
     "DSR": "Downward Shortwave Radiation",
     "FDC": "Fire/Hot Spot Characterization",
     "LSA": "Land Surface Albedo",

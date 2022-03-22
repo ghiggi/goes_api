@@ -102,14 +102,16 @@ def open_ABI_L2_product_guide(product):
         # "TPW": "Total Precipitable Water",
         "VAA": "QuickGuide_GOESR_VolcanicAsh.pdf",
     }
+    available_products = list(dict_product_fname.keys())
     # Check product
     if not isinstance(product, str):
         raise TypeError("Expecting a string defining a single ABI L2 product.")
-    product = _check_product(sensor="ABI", product_level="L2")
+    product = _check_product(product=product, sensor="ABI", product_level="L2")
     # Check QuickGuide availability
     fname = dict_product_fname.get(product, None)
     if fname is None:
-        raise ValueError(f"No ABI QuickGuide available for product '{product}'")
+        raise ValueError(f"No ABI QuickGuide available for product '{product}' .\n" +
+                         f"Documentation is available for the following L2 products {available_products}.")
     # Define url and open quickquide
     url = f"http://cimss.ssec.wisc.edu/goes/OCLOFactSheetPDFs/{fname}"
     webbrowser.open(url, new=1)

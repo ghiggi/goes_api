@@ -61,7 +61,7 @@ setup(
 )
 
 ###############################################################################
-## Brian's Note: How to upload a new version to PyPI
+## GOES2GO Note: How to upload a new version to PyPI
 ## -------------------------------------------------
 # Created a new conda environment with twine
 # conda create -n pypi python=3 twine pip -c conda-forge

@@ -475,9 +475,8 @@ def _check_filter_parameters(filter_parameters, sensor, sector):
     return filter_parameters
 
 
-def _check_group_by_key(group_by_key, sensor=None, product_level=None):
+def _check_group_by_key(group_by_key):
     """Check group_by_key validity."""
-    # TODO: check why sensor and product_level are required ...
     if not isinstance(group_by_key, (str, type(None))):
         raise TypeError("`group_by_key`must be a string or None.")
     if group_by_key is not None:
@@ -1123,7 +1122,7 @@ def group_files(fpaths, sensor, product_level, key="start_time"):
     """
     sensor = _check_sensor(sensor)
     product_level = _check_product_level(product_level, product=None)
-    key = _check_group_by_key(key, sensor, product_level)
+    key = _check_group_by_key(key)
     fpaths_dict = _group_fpaths_by_key(
         fpaths=fpaths, sensor=sensor, product_level=product_level, key=key
     )
@@ -1227,7 +1226,7 @@ def find_files(
     filter_parameters = _check_filter_parameters(
         filter_parameters, sensor, sector=sector
     )
-    group_by_key = _check_group_by_key(group_by_key, sensor, product_level)
+    group_by_key = _check_group_by_key(group_by_key)
 
     # Add start_time and end_time to filter_parameters
     filter_parameters = filter_parameters.copy()
@@ -1980,7 +1979,7 @@ def _set_connection_type(fpaths, satellite, protocol=None, connection_type=None)
                     tt: _add_nc_bytes(l_fpaths) for tt, l_fpaths in fpaths.items()
                 }
         return fpaths
-    else:  # TODO: add kerchunk (maybe)
+    else:
         raise NotImplementedError(
             "'bucket','https', 'nc_bytes' are the only `connection_type` available."
         )

@@ -23,10 +23,10 @@ from .io import (
 )
 
 
-def _generate_reference_json(url, json_dir, fs_args={}):
+def _generate_reference_json(url, reference_dir, fs_args={}):
     """Derive the kerchunk reference JSON file. 
     
-    The file is saved at <json_dir>/<satellite>/.../*.nc.json
+    The file is saved at <reference_dir>/<satellite>/.../*.nc.json
     """
     # Retrieve satellite
     satellite = infer_satellite_from_path(url)
@@ -34,22 +34,22 @@ def _generate_reference_json(url, json_dir, fs_args={}):
     
     # Define output json fpath 
     standard_path = remove_bucket_address(url)   
-    json_fpath = os.path.join(json_dir, satellite, standard_path + ".json")
+    reference_fpath = os.path.join(reference_dir, satellite, standard_path + ".json")
     
     # Create directory
-    os.makedirs(os.path.dirname(json_fpath), exist_ok=True)
+    os.makedirs(os.path.dirname(reference_fpath), exist_ok=True)
     
     # Read remote file and retrieve kerchunk reference dictionary 
     with fsspec.open(url, **fs_args) as input_f:
         h5chunks = SingleHdf5ToZarr(input_f, url, inline_threshold=200)
         file_metadata = h5chunks.translate()
         # Write kerchunk reference dictionary to JSON file 
-        with open(json_fpath, 'wb') as output_f:
+        with open(reference_fpath, 'wb') as output_f:
             output_f.write(ujson.dumps(file_metadata).encode())
 
     return None
 
-def _get_parallel_ref(bucket_fpaths, fs_args, json_dir, 
+def _get_parallel_ref(bucket_fpaths, fs_args, reference_dir, 
                       n_processes=20, progress_bar=True):
     """
     Run _generate_reference_json asynchronously in parallel using multiprocessing.
@@ -80,7 +80,7 @@ def _get_parallel_ref(bucket_fpaths, fs_args, json_dir,
     with ThreadPoolExecutor(max_workers=n_processes) as executor:
     # with ProcessPoolExecutor(max_workers=n_processes) as executor:
         dict_futures = {
-            executor.submit(_generate_reference_json, bucket_path, json_dir, fs_args): bucket_path
+            executor.submit(_generate_reference_json, bucket_path, reference_dir, fs_args): bucket_path
             for bucket_path in bucket_fpaths
         }
         # List files that didn't work
@@ -107,7 +107,7 @@ def generate_kerchunk_files(
         start_time,
         end_time,
         filter_parameters={},
-        json_dir=None,
+        reference_dir=None,
         n_processes=20, 
         protocol=None,
         fs_args={},
@@ -165,15 +165,14 @@ def generate_kerchunk_files(
         # Compute and write JSON files with dask  [OPTION 1]
         delayed_gen_fun = dask.delayed(_generate_reference_json)
         out = [delayed_gen_fun(fpath,
-                                json_dir=json_dir, 
+                                reference_dir=reference_dir, 
                                 fs_args=fs_args) for fpath in fpaths]
         dask.compute(out)
-        
         
         # Compute and write JSON files concurrently 
         # l_file_error = _get_parallel_ref(bucket_fpaths=fpaths,
         #                                  fs_args=kerchunk_fs_arg,
-        #                                  json_dir=json_dir, 
+        #                                  reference_dir=reference_dir, 
         #                                  n_processes=n_processes, 
         #                                  progress_bar=progress_bar)
         
