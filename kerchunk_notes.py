@@ -124,10 +124,6 @@ Created on Sun Mar  6 18:54:28 2022
 # https://github.com/lsterzinger/2022-esip-kerchunk-tutorial
 # https://github.com/lsterzinger/2022-esip-kerchunk-tutorial/blob/main/01-Create_References.ipynb !!!
 
-
-
-
-
 ###---------------------------------------------------------------------------.
 # Chelle Gentemann (SST-Tutorial)
 # https://nbviewer.org/github/cgentemann/cloud_science/blob/master/zarr_meta/cloud_mur_v41_benchmark.ipynb

@@ -106,18 +106,4 @@ fpaths
 ds = xr.open_dataset(l_files[4])
 ds['Rad'].shape
 ds['Rad'].nbytes/1024/1024 # MB 
-
-# GOES 16 SHAPE, MEMORY SIZE, CHUNK SIZE, CHUNK MEMORY (float32),  CHUNK DISK (int16)
-# - Full Disc CHUNK SIZE: 226x226  --> 0.19 MB per chunk (memory) --> 99 KB on disk
-# - CONUS     CHUNK SIZE: 250x250  --> 0.23 MB per chunk (memory) --> 122 KB disk
-# - Mesoscale CHUNK SIZE: 250x250  --> 0.23 MB per chunk (memory) --> 122 KB disk
-
-# FD: (10848,10848)    449 MB     2304 CHUNKS
-#     (21696, 21696)   1.75 GB    9216 CHUNKS
-#     (5424, 5424)     112 MB     576 CHUNKS
-    
-# C: (3000, 5000)     57 MB       240 CHUNKS
-#    (6000, 10000)    228 MB      960 CHUNKS
-#    (1500, 2500)     14 MB       60 CHUNKS
-
 ds['Rad'].isel(x=slice(0,226), y=slice(0,226)).nbytes/1024/1024
