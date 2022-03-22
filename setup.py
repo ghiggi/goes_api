@@ -60,18 +60,3 @@ setup(
     zip_safe=False,
 )
 
-###############################################################################
-## GOES2GO Note: How to upload a new version to PyPI
-## -------------------------------------------------
-# Created a new conda environment with twine
-# conda create -n pypi python=3 twine pip -c conda-forge
-"""
-conda activate pypi
-cd goes2go
-python setup.py sdist bdist_wheel
-twine check dist/*
-# Test PyPI
-twine upload --skip-existing --repository-url https://test.pypi.org/legacy/ dist/*
-# PyPI
-twine upload --skip-existing dist/*
-"""

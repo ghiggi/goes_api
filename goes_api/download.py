@@ -484,6 +484,9 @@ def download_latest_files(
     product_level,
     product,
     sector,
+    N = 1, 
+    check_consistency=True,
+    look_ahead_minutes=30, 
     n_threads=20,
     force_download=False,
     check_data_integrity=True,
@@ -497,6 +500,18 @@ def download_latest_files(
 
     Parameters
     ----------
+    look_ahead_minutes: int, optional
+        Number of minutes before actual time to search for latest data.
+        The default is 30 minutes
+    N : int
+        The number of last timesteps for which to download the files.
+        The default is 1.
+    check_consistency : bool, optional
+        Check for consistency of the returned files. The default is True.
+        It check that:
+         - the regularity of the previous timesteps, with no missing timesteps;
+         - the regularity of the scan mode, i.e. not switching from M3 to M6,
+         - if sector == M, the mesoscale domains are not changing within the considered period.
     base_dir : str
         Base directory path where the <GOES-**>/<product>/... directory structure
         should be created.
@@ -549,6 +564,7 @@ def download_latest_files(
     _check_download_protocol(protocol)
     # Get closest time
     latest_time = find_latest_start_time(
+        look_ahead_minutes=look_ahead_minutes,
         base_dir=None,
         protocol=protocol,
         fs_args=fs_args,
@@ -560,7 +576,11 @@ def download_latest_files(
         filter_parameters=filter_parameters,
     )
     # Download files
-    fpaths = download_files(
+    fpaths = download_previous_files(
+        N = N, 
+        check_consistency=check_consistency,
+        start_time=latest_time,
+        include_start_time=True,
         base_dir=base_dir,
         protocol=protocol,
         fs_args=fs_args,
@@ -570,8 +590,6 @@ def download_latest_files(
         product=product,
         sector=sector,
         filter_parameters=filter_parameters,
-        start_time=latest_time,
-        end_time=latest_time,
         n_threads=n_threads,
         force_download=force_download,
         check_data_integrity=check_data_integrity,
@@ -675,7 +693,7 @@ def download_previous_files(
     fpath_dict = find_previous_files(
         base_dir=None,
         start_time=start_time,
-        N=N,
+        N=N, 
         include_start_time=include_start_time,
         check_consistency=check_consistency,
         protocol=protocol,
@@ -690,7 +708,8 @@ def download_previous_files(
     # Get list datetime
     list_datetime = list(fpath_dict.keys())
     start_time = list_datetime[0]
-    end_time = list_datetime[-1]  # TODO: select end_time maybe
+    end_time = list_datetime[-1]   
+    
     # Download files
     fpaths = download_files(
         base_dir=base_dir,
@@ -824,7 +843,7 @@ def download_next_files(
     # Get list datetime
     list_datetime = list(fpath_dict.keys())
     start_time = list_datetime[0]
-    end_time = list_datetime[-1]  # TODO: select end_time maybe
+    end_time = list_datetime[-1]   
     # Download files
     fpaths = download_files(
         base_dir=base_dir,

@@ -14,9 +14,13 @@ from .io import (
     available_scan_modes,
     available_channels,
     available_products,
-    find_files,
+    available_connection_types,
+    available_group_keys,
     find_closest_start_time,
     find_latest_start_time,
+    find_files,
+    find_closest_files,
+    find_latest_files,
     find_previous_files,
     find_next_files,
     group_files,
@@ -35,6 +39,8 @@ from .explore import (
     open_ABI_L2_product_guide,
 )
 
+from .kerchunk import generate_kerchunk_files
+
 __all__ = [
     "available_protocols",
     "available_sensors",
@@ -44,6 +50,8 @@ __all__ = [
     "available_products",
     "available_scan_modes",
     "available_channels",
+    "available_connection_types",
+    "available_group_keys",
     "download_files",
     "download_closest_files",
     "download_latest_files",
@@ -58,6 +66,7 @@ __all__ = [
     "filter_files",
     "find_closest_start_time",
     "find_latest_start_time",
+    "generate_kerchunk_files",
     "open_directory_explorer",
     "open_ABI_channel_guide",
     "open_ABI_L2_product_guide",

@@ -18,7 +18,7 @@ import os
 import fsspec
 import datetime
 import numpy as np
-import pandas
+import pandas as pd
 from trollsift import Parser
 from .utils.time import _dt_to_year_doy_hour
 
@@ -526,7 +526,7 @@ def _check_interval_regularity(list_datetime):
     """Check regularity of a list of timesteps."""
     # TODO: raise info when missing between ... and ...
     if len(list_datetime) < 2:
-        raise ValueError("Provide a list with at least 2 datetime.")
+        return None
     list_datetime = sorted(list_datetime)
     list_timedelta = np.diff(list_datetime)
     list_unique_timedelta = np.unique(list_timedelta)
@@ -946,12 +946,13 @@ def _filter_file(
         if file_scene_abbr is not None:
             if file_scene_abbr not in scene_abbr:
                 return None
-
+    
     # Filter by start_time
     if start_time is not None:
         # If the file ends before start_time, do not select
+        # - Do not use <= because mesoscale data can have start_time=end_time at min resolution
         file_end_time = info_dict.get("end_time")
-        if file_end_time <= start_time:
+        if file_end_time < start_time: 
             return None
         # This would exclude a file with start_time within the file
         # if file_start_time < start_time:
@@ -1079,17 +1080,20 @@ def _get_sector_timedelta(sector):
 
 def _group_fpaths_by_key(fpaths, sensor, product_level, key="start_time"):
     """Utils function to group filepaths by key contained into filename."""
+    # - Retrieve key sorting index 
     list_key_values = [
         _get_info_from_filepath(fpath, sensor, product_level)[key] for fpath in fpaths
     ]
-    # - Sort fpaths by key values
     idx_key_sorting = np.array(list_key_values).argsort()
+    # - Sort fpaths and key_values by key values
     fpaths = np.array(fpaths)[idx_key_sorting]
     list_key_values = np.array(list_key_values)[idx_key_sorting]
     # - Retrieve first occurence of new key value
     unique_key_values, cut_idx = np.unique(list_key_values, return_index=True)
     # - Split by key value
     fpaths_grouped = np.split(fpaths, cut_idx)[1:]
+    # - Convert array of fpaths into list of fpaths 
+    fpaths_grouped = [arr.tolist() for arr in fpaths_grouped]
     # - Create (key: files) dictionary
     fpaths_dict = dict(zip(unique_key_values, fpaths_grouped))
     return fpaths_dict
@@ -1211,7 +1215,8 @@ def find_files(
             if protocol not in ["file", "local"]:
                 raise ValueError("If base_dir is specified, protocol must be None.")
         else:
-            protocol = "file "
+            protocol = "file"
+            fs_args = {}
     # Format inputs
     protocol = _check_protocol(protocol)
     base_dir = _check_base_dir(base_dir)
@@ -1252,13 +1257,13 @@ def find_files(
     # Define time directories
     start_year, start_doy, start_hour = _dt_to_year_doy_hour(start_time)
     end_year, end_doy, end_hour = _dt_to_year_doy_hour(end_time)
-    list_hourly_times = pandas.date_range(start_time, end_time, freq="1h")
+    list_hourly_times = pd.date_range(start_time, end_time, freq="1h")
     list_year_doy_hour = [_dt_to_year_doy_hour(dt) for dt in list_hourly_times]
     list_year_doy_hour = ["/".join(tpl) for tpl in list_year_doy_hour]
 
     # Define glob patterns
     list_glob_pattern = [
-        os.path.join(product_dir, dt_str, "*.nc") for dt_str in list_year_doy_hour
+        os.path.join(product_dir, dt_str, "*.nc*") for dt_str in list_year_doy_hour
     ]
     n_directories = len(list_glob_pattern)
     if verbose:
@@ -1563,6 +1568,8 @@ def find_latest_files(
     protocol=None,
     fs_args={},
     filter_parameters={},
+    N = 1, 
+    check_consistency=True, 
     look_ahead_minutes=30,
 ):
     """
@@ -1576,7 +1583,16 @@ def find_latest_files(
     ----------
     look_ahead_minutes: int, optional
         Number of minutes before actual time to search for latest data.
-        THe default is 30 minutes.
+        The default is 30 minutes.
+    N : int
+        The number of last timesteps for which to download the files.
+        The default is 1.
+    check_consistency : bool, optional
+        Check for consistency of the returned files. The default is True.
+        It check that:
+         - the regularity of the previous timesteps, with no missing timesteps;
+         - the regularity of the scan mode, i.e. not switching from M3 to M6,
+         - if sector == M, the mesoscale domains are not changing within the considered period.
     base_dir : str
         Base directory path where the <GOES-**> satellite is located.
         This argument must be specified only if searching files on local storage.
@@ -1613,12 +1629,9 @@ def find_latest_files(
         See `goes_api.available_connection_types` for implemented solutions.
 
     """
-    # Search in the past N hour of data
-    start_time = datetime.datetime.utcnow() - datetime.timedelta(
-        minutes=look_ahead_minutes
-    )
-    end_time = datetime.datetime.utcnow()
-    fpath_dict = find_files(
+    # Get closest time
+    latest_time = find_latest_start_time(
+        look_ahead_minutes=look_ahead_minutes, 
         base_dir=base_dir,
         protocol=protocol,
         fs_args=fs_args,
@@ -1627,18 +1640,26 @@ def find_latest_files(
         product_level=product_level,
         product=product,
         sector=sector,
-        start_time=start_time,
-        end_time=end_time,
         filter_parameters=filter_parameters,
-        group_by_key="start_time",
-        connection_type=connection_type,
-        verbose=False,
     )
-    # Find the latest time available
-    list_datetime = list(fpath_dict.keys())
-    idx_latest = np.argmax(np.array(list_datetime))
-    datetime_latest = list_datetime[idx_latest]
-    return fpath_dict[datetime_latest]
+    
+    fpath_dict = find_previous_files(
+        N = N, 
+        check_consistency=check_consistency,
+        start_time=latest_time,
+        include_start_time=True, 
+        base_dir=base_dir,
+        protocol=protocol,
+        fs_args=fs_args,
+        satellite=satellite,
+        sensor=sensor,
+        product_level=product_level,
+        product=product,
+        sector=sector,
+        filter_parameters=filter_parameters,
+        connection_type=connection_type,
+    )
+    return fpath_dict
 
 
 def find_previous_files(
@@ -1718,6 +1739,9 @@ def find_previous_files(
         Dictionary with structure {<datetime>: [fpaths]}
 
     """
+    sensor = _check_sensor(sensor)
+    sector = _check_sector(sector)
+    product_level = _check_product_level(product_level)
     # Set time precision to minutes
     start_time = _check_time(start_time)
     start_time = start_time.replace(microsecond=0, second=0)
@@ -1743,7 +1767,7 @@ def find_previous_files(
     # Retrieve timedelta conditioned to sector type
     timedelta = _get_sector_timedelta(sector)
     # Define start_time and end_time
-    start_time = closest_time - timedelta * N
+    start_time = closest_time - timedelta * (N+1) # +1 for when include_start_time=False
     end_time = closest_time
     # Retrieve files
     fpath_dict = find_files(
@@ -1764,6 +1788,7 @@ def find_previous_files(
     )
     # List previous datetime
     list_datetime = sorted(list(fpath_dict.keys()))
+    # Remove start_time if include_start_time=False
     if not include_start_time:
         list_datetime.remove(closest_time)
     list_datetime = sorted(list_datetime)
@@ -1784,7 +1809,9 @@ def find_previous_files(
         # Check constant scan_mode
         _check_unique_scan_mode(fpath_dict, sensor, product_level)
         # Check for interval regularity
-        _check_interval_regularity(list_datetime + [closest_time])
+        if not include_start_time: 
+            list_datetime = list_datetime + [closest_time]
+        _check_interval_regularity(list_datetime)
         # TODO Check for Mesoscale same location (on M1 and M2 separately) !
         # - raise information when it changes !
         if sector == "M":
@@ -1871,6 +1898,9 @@ def find_next_files(
         Dictionary with structure {<datetime>: [fpaths]}
 
     """
+    sensor = _check_sensor(sensor)
+    sector = _check_sector(sector)
+    product_level = _check_product_level(product_level)
     # Set time precision to minutes
     start_time = _check_time(start_time)
     start_time = start_time.replace(microsecond=0, second=0)
@@ -1897,7 +1927,7 @@ def find_next_files(
     timedelta = _get_sector_timedelta(sector)
     # Define start_time and end_time
     start_time = closest_time
-    end_time = closest_time + timedelta * N
+    end_time = closest_time + timedelta * (N+1) # +1 for when include_start_time=False
     # Retrieve files
     fpath_dict = find_files(
         base_dir=base_dir,
@@ -1937,7 +1967,9 @@ def find_next_files(
         # Check constant scan_mode
         _check_unique_scan_mode(fpath_dict, sensor, product_level)
         # Check for interval regularity
-        _check_interval_regularity(list_datetime + [closest_time])
+        if not include_start_time: 
+            list_datetime = list_datetime + [closest_time]
+        _check_interval_regularity(list_datetime)
         # TODO Check for Mesoscale same location (on M1 and M2 separately) !
         # - raise information when it changes !
         if sector == "M":

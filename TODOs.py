@@ -19,6 +19,7 @@ Created on Tue Mar  1 16:33:44 2022
 # M4 is mode 4 (only full disk scans every five minutes – no mesoscale or CONUS)
 ## https://www.goes-r.gov/users/abiScanModeInfo.html 
 # https://www.youtube.com/watch?v=qCAPwgQR13w&ab_channel=NOAASatellites
+
 # Mode 3 
 # - Till April 2, 2019 
 # - FULL DISK every 15 minutes 
@@ -72,6 +73,11 @@ https://jhbravo.gitlab.io/geostationary-images/
 ### intake_catalog 
 
 ### CLI for download  
+
+ds = xr.open_dataset(l_files[4])
+ds['Rad'].shape
+ds['Rad'].nbytes/1024/1024 # MB 
+ds['Rad'].isel(x=slice(0,226), y=slice(0,226)).nbytes/1024/1024
 
 ####--------------------------------------------------------------------------.
 #### Applications

@@ -192,3 +192,21 @@ def generate_kerchunk_files(
         print("-------------------------------------------------------------------- ")         
                  
     return None 
+
+
+def get_reference_mappers(fpaths, protocol="s3"):
+    """Return list of reference mappers objects."""
+    m_list = []
+    for fpath in tqdm(fpaths):
+        # Open reference dict
+        with open(fpath) as f:
+        
+            reference_dict = ujson.load(f)
+        # TODO: here possibly change bucket url 
+        reference_dict = reference_dict.copy()
+        # Create FSMap 
+        m_list.append(fsspec.get_mapper("reference://", 
+                        fo=reference_dict,
+                        remote_protocol=protocol,
+                        remote_options={'anon':True}))
+    return m_list
