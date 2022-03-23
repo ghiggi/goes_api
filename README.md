@@ -8,7 +8,7 @@ ATTENTION: The code will like be the subject of progressive updates in the comin
 
 The folder `docs` contains documents with various information related to GOES data products.
 
-The folder `tutorials` provide jupyter notebooks describing various features of GOES_API.
+The folder `tutorials` provide the following jupyter notebooks, describing various features of GOES_API:
 
 - Downloading GOES data: [`download.ipynb`]
 - Find and filter GOES data: [`find_and_filter.ipynb`]
