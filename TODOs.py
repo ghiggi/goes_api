@@ -5,7 +5,22 @@ Created on Tue Mar  1 16:33:44 2022
 
 @author: ghiggi
 """
- 
+# https://github.com/pytroll/pytroll-examples/issues/35 
+# Post performance benchmark 
+# Correct cgentlemann, file and chunked and very small !!!
+
+# Add https://github.com/pytroll/satpy/issues/1062 
+# https://github.com/pytroll/satpy/pull/1423
+
+# sudo apt install nethogs
+# nethogs -v 3 to monitor data transfer
+
+# todo: rerun benchmark with blockcache 
+# --->  need to optimize block_size
+# --->  use simplecache 
+# - https://github.com/pytroll/satpy/pull/1321
+
+#-----------------------------------------------------------------------------.
 
 # The L1b Radiances and L2 Cloud and Moisture Imagery have separate files for each of the 16 bands.
 # 'ABI-L2-MCMIPC

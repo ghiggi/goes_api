@@ -10,7 +10,7 @@ import goes_api
 from goes_api import download_files, find_files, group_files
 
 ###---------------------------------------------------------------------------.
-#### An overview of goes_api 
+#### An overview of goes_api
 print(dir(goes_api))
 goes_api.available_protocols()
 
@@ -27,11 +27,12 @@ goes_api.available_channels()
 
 ## List online GOES-16 netCDF data
 from goes_api.io import get_available_online_product
+
 get_available_online_product(protocol="s3", satellite="goes-16")
 get_available_online_product(protocol="gcs", satellite="goes-16")
 
 ###---------------------------------------------------------------------------.
-#### Define protocol and local directory 
+#### Define protocol and local directory
 base_dir = "/tmp/"
 
 protocol = "gcs"
@@ -39,44 +40,44 @@ protocol = "s3"
 fs_args = {}
 
 ###---------------------------------------------------------------------------.
-#### Define satellite, sensor, product_level and product 
+#### Define satellite, sensor, product_level and product
 satellite = "GOES-16"
 sensor = "ABI"
 product_level = "L1B"
-product = "Rad"  
+product = "Rad"
 
 ###---------------------------------------------------------------------------.
-#### Define sector and filtering options 
+#### Define sector and filtering options
 start_time = datetime.datetime(2019, 11, 17, 11, 30)
 end_time = datetime.datetime(2019, 11, 17, 11, 40)
 
-# - Full Disc Example 
+# - Full Disc Example
 sector = "F"
-scene_abbr = None  # DO NOT SPECIFY FOR FULL DISC SECTOR 
+scene_abbr = None  # DO NOT SPECIFY FOR FULL DISC SECTOR
 scan_modes = None  # select all scan modes (M3, M4, M6)
-channels = None    # select all channels
-channels = ['C01'] # select channels subset
+channels = None  # select all channels
+channels = ["C01"]  # select channels subset
 filter_parameters = {}
 filter_parameters["scan_modes"] = scan_modes
 filter_parameters["channels"] = channels
 filter_parameters["scene_abbr"] = scene_abbr
 
-# - Mesoscale Example 
+# - Mesoscale Example
 sector = "M"
-scene_abbr = ['M1'] # None download and find both locations
+scene_abbr = ["M1"]  # None download and find both locations
 scan_modes = None  # select all scan modes (M3, M4, M6)
-channels = None    # select all channels
-channels = ['C01'] # select channels subset
+channels = None  # select all channels
+channels = ["C01"]  # select channels subset
 filter_parameters = {}
 filter_parameters["scan_modes"] = scan_modes
 filter_parameters["channels"] = channels
 filter_parameters["scene_abbr"] = scene_abbr
 
 ###---------------------------------------------------------------------------.
-#### Download files   
-n_threads = 20          # n_parallel downloads
+#### Download files
+n_threads = 20  # n_parallel downloads
 force_download = False  # whether to overwrite existing data on disk
- 
+
 l_fpaths = download_files(
     base_dir=base_dir,
     protocol=protocol,
@@ -97,7 +98,7 @@ l_fpaths = download_files(
 )
 
 ###---------------------------------------------------------------------------.
-#### Retrieve filepaths from local disk  
+#### Retrieve filepaths from local disk
 fpaths = find_files(
     base_dir=base_dir,
     satellite=satellite,
@@ -114,9 +115,11 @@ print(fpaths)
 assert fpaths == l_fpaths
 
 ###---------------------------------------------------------------------------.
-#### Group filepaths by key (i.e. start_time) 
+#### Group filepaths by key (i.e. start_time)
 goes_api.available_group_keys()
-fpath_dict = group_files(fpaths, sensor=sensor, product_level=product_level, key="start_time")
+fpath_dict = group_files(
+    fpaths, sensor=sensor, product_level=product_level, key="start_time"
+)
 print(fpath_dict)
 
 # Alternatively specify the group_by_key args in find_files
@@ -136,10 +139,10 @@ fpath_dict = find_files(
 print(fpath_dict)
 
 ###---------------------------------------------------------------------------.
-#### Retrieve filepaths from cloud buckets  
+#### Retrieve filepaths from cloud buckets
 goes_api.available_connection_types()
 
-# Bucket url 
+# Bucket url
 fpaths = find_files(
     protocol=protocol,
     fs_args=fs_args,
@@ -151,7 +154,7 @@ fpaths = find_files(
     start_time=start_time,
     end_time=end_time,
     filter_parameters=filter_parameters,
-    connection_type="bucket", # default
+    connection_type="bucket",  # default
     verbose=True,
 )
 print(fpaths[0])
