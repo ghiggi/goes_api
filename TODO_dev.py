@@ -11,13 +11,13 @@ Created on Tue Mar 22 11:04:53 2022
 # _check_unique_scan_mode: raise information when it changes
 # _check_interval_regularity: raise info when missing between ... and ...
 # --> Deal with mesoscale at 30 seconds? Now grouped within minutes? Maybe do not set seconds to 0?
-# --> With check_consistency_False it download/find but then grouped within minute keys 
+# --> With check_consistency_False it download/find but then grouped within minute keys
 
 
 ### kerchunk
-# - Parallelize kerchunk reference file creation efficiently 
+# - Parallelize kerchunk reference file creation efficiently
 # - Benchmark dask.bag vs. dask_delayed vs. concurrent multithreading
-# - MultiProcess seems to hang 
+# - MultiProcess seems to hang
 
 # - replace bucket url in reference dictionary
 
@@ -26,19 +26,14 @@ Created on Tue Mar 22 11:04:53 2022
 # ds.nbytes / 1e9  # GB
 # ds.nbytes / 1e12  # TB
 
-#-----------------------------------------------------------------------------.
-
-# def _get_cpus():
-#     if max_cpus is None:
-#         max_cpus = multiprocessing.cpu_count()
-#     cpus = np.minimum(multiprocessing.cpu_count(), max_cpus)
-#     cpus = np.minimum(cpus, n)
-
-#-----------------------------------------------------------------------------.
+# -----------------------------------------------------------------------------.
 #### Download options
-# - Download specific hour folder
-# - Download specific date (download per doy)
-# - date --> download directories if no filtering asked
+
+# CLI for download
+
+# Download Daily Folders
+
+# Download Monthly Products
 
 ##  Methods
 # - rclone  <--- for bulk download ? how to parallelize
@@ -48,7 +43,7 @@ Created on Tue Mar 22 11:04:53 2022
 
 # - http download (wget, ... )
 
-#-----------------------------------------------------------------------------.
+# -----------------------------------------------------------------------------.
 
 # Turn some attributes to coordinates so that are preserved when concatenating
 #  multiple GOES DataSets together.
@@ -58,6 +53,7 @@ attr2coord = [
     "time_coverage_start",
     "time_coverage_end",
 ]
+
 
 def _attrs_2_coords(ds, attrs):
     for key in attrs:
