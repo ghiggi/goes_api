@@ -1,4 +1,4 @@
-# GOES API - An API to download and query GOES third generation satellite data.
+# GOES API - An API to download and query GOES satellite data.
 
 The code in this repository provides an API to donwload, query and filter GOES16 and GOES17 satellite data.
 
