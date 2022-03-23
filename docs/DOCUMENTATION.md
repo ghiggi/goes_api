@@ -136,4 +136,29 @@ GHCN-D
 - https://registry.opendata.aws/noaa-ghcn/
 - https://console.cloud.google.com/marketplace/product/noaa-public/ghcn-d?filter=solution-type:dataset&q=NOAA&id=9d500d1d-fda4-4413-a789-d8786fd6592e&pli=1
 
+## GEO imagery 
+- https://satepsanone.nesdis.noaa.gov/
+
+
+##  THREDDS Catalogs
+- https://www.unidata.ucar.edu/software/mcidas/adde_servers.html (lot of link)
+
+Unidata THREDDS - GOES-R Data of last 14 days
+- https://thredds-test.unidata.ucar.edu/thredds/catalog/satellite/goes16/GOES17/catalog.html
+- goeseast.unidata.ucar.edu
+- goeswest.unidata.ucar.edu
+
+NCEI THREDDS - GridSat (Global 3-hourly IR from 1980 to 2021) 
+- 8 km resolution at equator 
+- Equal area grid is 0.07 degrees latitude 
+- From -70 to 70 N
+- https://www.ncei.noaa.gov/thredds/catalog/cdr/gridsat/catalog.html
+
+NCEI THREDDS - PERSIANN-CDR
+- https://www.ncei.noaa.gov/thredds/catalog/cdr/persiann/catalog.html
+
+Other NCEII data
+- https://www.ncei.noaa.gov/data/
+
+
  

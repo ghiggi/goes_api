@@ -10,6 +10,10 @@ from satpy import Scene
 from satpy.readers import FSFile
 from goes_api import find_latest_files
 
+###---------------------------------------------------------------------------.
+# Install satpy to execute this script
+# conda install -c conda-forge satpy
+
 # NOTE: For GOES performance benchmarks, check https://github.com/ghiggi/goes_benchmarks/
 ###---------------------------------------------------------------------------.
 #### Define protocol
@@ -32,7 +36,7 @@ sector = "M"
 scene_abbr = ["M1"]  # None download and find both locations
 scan_modes = None  # select all scan modes (M3, M4, M6)
 channels = None  # select all channels
-channels = ["C01", "C02", "C03", "C04", "C05"]  # select channels subset
+channels = ["C01", "C02", "C03"]  # select channels subset
 filter_parameters = {}
 filter_parameters["scan_modes"] = scan_modes
 filter_parameters["channels"] = channels
@@ -81,6 +85,7 @@ new_scn.show("true_color")
 new_scn = scn.resample(scn.coarsest_area(), resampler="native")
 new_scn.load(["true_color"])
 new_scn.show("true_color")
+# new_scn.save_datasets(filename='{name}.png')
 
 del files, satpy_files  # GOOD PRACTICE TO CLOSE CONNECTIONS !!!
 
