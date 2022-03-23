@@ -1,4 +1,4 @@
-# GOES ABI SCAN MODES 
+## GOES ABI SCAN MODES 
 
 GOES ABI has currently 3 types of `scan_modes`.
 
