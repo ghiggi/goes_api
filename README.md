@@ -7,6 +7,7 @@ Documentation is available at XXXXX
 ATTENTION: The code will like be the subject of progressive updates in the coming  months.
 
 The folder `docs` contains documents with various information related to GOES data products.
+
 The folder `tutorials` provide jupyter notebooks describing various features of GOES_API.
 
 - Downloading GOES data: [`download.ipynb`]
