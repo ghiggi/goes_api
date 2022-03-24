@@ -1,6 +1,7 @@
 # GOES API - An API to download and query GOES satellite data.
 
-The code in this repository provides an API to donwload, query and filter GOES16 and GOES17 satellite data.
+The code in this repository provides an API to download, query and filter GOES16 and GOES17 satellite data.
+Data can be retrieve for sensors ABI, EXIS, GLM, MAG, SEIS and SUVI.
 
 Documentation is available at XXXXX
 
