@@ -131,16 +131,16 @@ GLOB_FNAME_PATTERN = {
         "L2": "{system_environment:s}_{sensor:3s}-{product_level:s}-{product:s}_{platform_shortname:3s}_s{start_time:%Y%j%H%M%S%f}_e{end_time:%Y%j%H%M%S%f}_c{creation_time:%Y%j%H%M%S%f}.nc",
     },
     "EXIS": {
-        "L1b": "{system_environment:s}_{sensor:3s}-{product_level:s}-{product:s}_{platform_shortname:3s}_s{start_time:%Y%j%H%M%S%f}_e{end_time:%Y%j%H%M%S%f}_c{creation_time:%Y%j%H%M%S%f}.nc",
+        "L1b": "{system_environment:s}_{sensor:4s}-{product_level:s}-{product:s}_{platform_shortname:3s}_s{start_time:%Y%j%H%M%S%f}_e{end_time:%Y%j%H%M%S%f}_c{creation_time:%Y%j%H%M%S%f}.nc",
     },
     "SUVI": {
-        "L1b": "{system_environment:s}_{sensor:3s}-{product_level:s}-{product:s}_{platform_shortname:3s}_s{start_time:%Y%j%H%M%S%f}_e{end_time:%Y%j%H%M%S%f}_c{creation_time:%Y%j%H%M%S%f}.nc",
+        "L1b": "{system_environment:s}_{sensor:4s}-{product_level:s}-{product:s}_{platform_shortname:3s}_s{start_time:%Y%j%H%M%S%f}_e{end_time:%Y%j%H%M%S%f}_c{creation_time:%Y%j%H%M%S%f}.nc",
     },
     "MAG": {
         "L1b": "{system_environment:s}_{sensor:3s}-{product_level:s}-{product:s}_{platform_shortname:3s}_s{start_time:%Y%j%H%M%S%f}_e{end_time:%Y%j%H%M%S%f}_c{creation_time:%Y%j%H%M%S%f}.nc",
     },
     "SEIS": {
-        "L1b": "{system_environment:s}_{sensor:3s}-{product_level:s}-{product:s}_{platform_shortname:3s}_s{start_time:%Y%j%H%M%S%f}_e{end_time:%Y%j%H%M%S%f}_c{creation_time:%Y%j%H%M%S%f}.nc",
+        "L1b": "{system_environment:s}_{sensor:4s}-{product_level:s}-{product:s}_{platform_shortname:3s}_s{start_time:%Y%j%H%M%S%f}_e{end_time:%Y%j%H%M%S%f}_c{creation_time:%Y%j%H%M%S%f}.nc",
     },
 }
 

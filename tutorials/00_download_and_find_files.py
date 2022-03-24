@@ -117,9 +117,7 @@ assert fpaths == l_fpaths
 ###---------------------------------------------------------------------------.
 #### Group filepaths by key (i.e. start_time)
 goes_api.available_group_keys()
-fpath_dict = group_files(
-    fpaths, sensor=sensor, product_level=product_level, key="start_time"
-)
+fpath_dict = group_files(fpaths,  key="start_time")
 print(fpath_dict)
 
 # Alternatively specify the group_by_key args in find_files

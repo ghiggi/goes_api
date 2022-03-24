@@ -213,13 +213,13 @@ def download_files(
     product : str
         The name of the product to retrieve.
         See `goes_api.available_products()` for a list of available products.
-    sector : str
-        The acronym of the sector for which to retrieve the files.
-        See `goes_api.available_sectors()` for a list of available sectors.
     start_time : datetime.datetime
         The start (inclusive) time of the interval period for retrieving the filepaths.
     end_time : datetime.datetime
         The end (exclusive) time of the interval period for retrieving the filepaths.
+    sector : str
+        The acronym of the ABI sector for which to retrieve the files.
+        See `goes_api.available_sectors()` for a list of available sectors.
     filter_parameters : dict, optional
         Dictionary specifying option filtering parameters.
         Valid keys includes: `channels`, `scan_modes`, `scene_abbr`.
@@ -374,14 +374,14 @@ def download_closest_files(
     sensor,
     product_level,
     product,
-    sector,
     time,
+    sector=None,
+    filter_parameters={},
     n_threads=20,
     force_download=False,
     check_data_integrity=True,
     progress_bar=True,
     verbose=True,
-    filter_parameters={},
     fs_args={},
 ):
     """
@@ -389,6 +389,8 @@ def download_closest_files(
 
     Parameters
     ----------
+    time : datetime.datetime
+        The time for which you desire to retrieve the files with closest start_time.
     base_dir : str
         Base directory path where the <GOES-**>/<product>/... directory structure
         should be created.
@@ -412,10 +414,8 @@ def download_closest_files(
         The name of the product to retrieve.
         See `goes_api.available_products()` for a list of available products.
     sector : str
-        The acronym of the sector for which to retrieve the files.
+        The acronym of the ABI sector for which to retrieve the files.
         See `goes_api.available_sectors()` for a list of available sectors.
-    time : datetime.datetime
-        The time for which you desire to retrieve the files with closest start_time.
     filter_parameters : dict, optional
         Dictionary specifying option filtering parameters.
         Valid keys includes: `channels`, `scan_modes`, `scene_abbr`.
@@ -483,7 +483,8 @@ def download_latest_files(
     sensor,
     product_level,
     product,
-    sector,
+    sector=None,
+    filter_parameters={},
     N = 1, 
     check_consistency=True,
     look_ahead_minutes=30, 
@@ -492,7 +493,6 @@ def download_latest_files(
     check_data_integrity=True,
     progress_bar=True,
     verbose=True,
-    filter_parameters={},
     fs_args={},
 ):
     """
@@ -535,7 +535,7 @@ def download_latest_files(
         The name of the product to retrieve.
         See `goes_api.available_products()` for a list of available products.
     sector : str
-        The acronym of the sector for which to retrieve the files.
+        The acronym of the ABI sector for which to retrieve the files.
         See `goes_api.available_sectors()` for a list of available sectors.
     filter_parameters : dict, optional
         Dictionary specifying option filtering parameters.
@@ -605,9 +605,10 @@ def download_previous_files(
     sensor,
     product_level,
     product,
-    sector,
     start_time,
     N,
+    sector=None,
+    filter_parameters={},
     include_start_time=False,
     check_consistency=True,
     n_threads=20,
@@ -615,7 +616,6 @@ def download_previous_files(
     check_data_integrity=True,
     progress_bar=True,
     verbose=True,
-    filter_parameters={},
     fs_args={},
 ):
     """
@@ -662,7 +662,7 @@ def download_previous_files(
         The name of the product to retrieve.
         See `goes_api.available_products()` for a list of available products.
     sector : str
-        The acronym of the sector for which to retrieve the files.
+        The acronym of the ABI sector for which to retrieve the files.
         See `goes_api.available_sectors()` for a list of available sectors.
     filter_parameters : dict, optional
         Dictionary specifying option filtering parameters.
@@ -729,7 +729,7 @@ def download_previous_files(
         verbose=verbose,
     )
     # Group files by start_time
-    fpaths_dict = group_files(fpaths, sensor, product_level, key="start_time")
+    fpaths_dict = group_files(fpaths, key="start_time")
     return fpaths_dict
 
 
@@ -740,9 +740,10 @@ def download_next_files(
     sensor,
     product_level,
     product,
-    sector,
     start_time,
     N,
+    sector=None,
+    filter_parameters={},
     include_start_time=False,
     check_consistency=True,
     n_threads=20,
@@ -750,7 +751,6 @@ def download_next_files(
     check_data_integrity=True,
     progress_bar=True,
     verbose=True,
-    filter_parameters={},
     fs_args={},
 ):
     """
@@ -797,7 +797,7 @@ def download_next_files(
         The name of the product to retrieve.
         See `goes_api.available_products()` for a list of available products.
     sector : str
-        The acronym of the sector for which to retrieve the files.
+        The acronym of the ABI sector for which to retrieve the files.
         See `goes_api.available_sectors()` for a list of available sectors.
     filter_parameters : dict, optional
         Dictionary specifying option filtering parameters.
@@ -863,5 +863,5 @@ def download_next_files(
         verbose=verbose,
     )
     # Group files by start_time
-    fpaths_dict = group_files(fpaths, sensor, product_level, key="start_time")
+    fpaths_dict = group_files(fpaths, key="start_time")
     return fpaths_dict

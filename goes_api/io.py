@@ -184,7 +184,8 @@ def available_group_keys():
     group_keys = [
         "system_environment",
         "sensor",  # ABI
-        "product",  # ...
+        "product_level",
+        "product",       # ...
         "scene_abbr",  # ["F", "C", "M1", "M2"]
         "scan_mode",  # ["M3", "M4", "M6"]
         "channel",  # C**
@@ -244,8 +245,14 @@ def _check_satellite(satellite):
     return satellite_key
 
 
-def _check_sector(sector, product=None):
+def _check_sector(sector, sensor, product=None):
     """Check sector validity."""
+    if sector is None: 
+        if sensor == "ABI":
+            raise ValueError("If sensor='ABI', `sector` must be specified!")
+        return sector 
+    if sector is not None and sensor != "ABI": 
+        raise ValueError("`sector`must be specified only for sensor='ABI'.")
     if not isinstance(sector, str):
         raise TypeError("`sector` must be a string.")
     # Retrieve sector key accounting for possible aliases
@@ -510,16 +517,17 @@ def _check_connection_type(connection_type, protocol):
 def _check_unique_scan_mode(fpath_dict, sensor, product_level):
     """Check files have unique scan_mode validity."""
     # TODO: raise information when it changes
-    list_datetime = list(fpath_dict.keys())
-    fpaths_examplars = [fpath_dict[tt][0] for tt in list_datetime]
-    list_scan_modes = _get_key_from_filepaths(
-        fpaths_examplars, sensor, product_level, key="scan_mode"
-    )
-    list_scan_modes = np.unique(list_scan_modes).tolist()
-    if len(list_scan_modes) != 1:
-        raise ValueError(
-            f"There is a mixture of the following scan_mode: {list_scan_modes}."
+    if sensor == "ABI":
+        list_datetime = list(fpath_dict.keys())
+        fpaths_examplars = [fpath_dict[tt][0] for tt in list_datetime]
+        list_scan_modes = _get_key_from_filepaths(
+            fpaths_examplars, key="scan_mode", sensor=sensor, product_level=product_level,
         )
+        list_scan_modes = np.unique(list_scan_modes).tolist()
+        if len(list_scan_modes) != 1:
+            raise ValueError(
+                f"There is a mixture of the following scan_mode: {list_scan_modes}."
+            )
 
 
 def _check_interval_regularity(list_datetime):
@@ -810,9 +818,11 @@ def _get_bucket_prefix(protocol):
 
 def _get_product_name(sensor, product_level, product, sector):
     """Get bucket directory name of a product."""
-    product_name = f"{sensor}-{product_level}-{product}{sector}"
+    if sensor=='ABI':
+        product_name = f"{sensor}-{product_level}-{product}{sector}"
+    else: 
+        product_name = f"{sensor}-{product_level}-{product}"
     return product_name
-
 
 def _get_product_dir(
     satellite, sensor, product_level, product, sector, protocol=None, base_dir=None
@@ -849,6 +859,43 @@ def remove_bucket_address(fpath):
 
 ####---------------------------------------------------------------------------.
 #### Filtering
+def _infer_product_level(fpath):
+    """Infer product_level from filepath."""
+    fname = os.path.basename(fpath)
+    if '-L1b-' in fname: 
+        return 'L1b'
+    elif '-L2-' in fname: 
+        return 'L2'
+    else: 
+        raise ValueError(f"`product_level` could not be inferred from {fname}.")
+
+def _infer_sensor(fpath):
+    """Infer sensor from filepath."""
+    fname = os.path.basename(fpath)
+    if '_ABI-' in fname: 
+        return 'ABI'
+    elif '_EXIS-' in fname: 
+        return 'EXIS'
+    elif '_GLM-' in fname: 
+        return 'GLM'
+    elif '_MAG-' in fname: 
+        return 'MAG'
+    elif '_SEIS-' in fname: 
+        return 'SEIS'
+    elif '_SUVI-' in fname: 
+        return 'SUVI'
+    else: 
+        raise ValueError(f"`sensor` could not be inferred from {fname}.")
+
+def _infer_satellite(fpath):
+    """Infer satellite from filepath."""
+    fname = os.path.basename(fpath)
+    if '_G16_' in fname: 
+        return 'GOES-16'
+    elif '_G17_-' in fname: 
+        return 'GOES-17'
+    else: 
+        raise ValueError(f"`satellite` could not be inferred from {fname}.")
 
 def _separate_product_scene_abbr(product_scene_abbr):
     """Return (product, scene_abbr) from <product><scene_abbr> string."""
@@ -863,17 +910,32 @@ def _separate_product_scene_abbr(product_scene_abbr):
         raise NotImplementedError("Adapat the file patterns.")
 
 
-def _get_info_from_filename(fname, sensor, product_level):
+def _get_info_from_filename(fname, sensor=None, product_level=None):
     """Retrieve file information dictionary from filename."""
+    # TODO: sensor and product_level can be removed as function arguments
     from goes_api.listing import GLOB_FNAME_PATTERN
-
+    # Infer sensor and product_level if not provided
+    if sensor is None:
+        sensor = _infer_sensor(fname)
+    if product_level is None: 
+        product_level = _infer_product_level(fname)
+        
+    # Retrieve file pattern
     fpattern = GLOB_FNAME_PATTERN[sensor][product_level]
+    
+    # Retrieve information from filename 
     p = Parser(fpattern)
     info_dict = p.parse(fname)
+    
+    # Assert sensor and product_level are correct
+    assert sensor == info_dict['sensor']
+    assert product_level == info_dict['product_level']
+    
     # Round start_time and end_time to minute resolution
     info_dict["start_time"] = info_dict["start_time"].replace(microsecond=0, second=0)
     info_dict["end_time"] = info_dict["end_time"].replace(microsecond=0, second=0)
-    # Special treatment for L2 products
+    
+    # Special treatment for ABI L2 products
     if info_dict.get("product_scene_abbr") is not None:
         # Identify scene_abbr
         product, scene_abbr = _separate_product_scene_abbr(
@@ -889,11 +951,30 @@ def _get_info_from_filename(fname, sensor, product_level):
             channels = scan_mode_channels[3:]
             info_dict["scan_mode"] = scan_mode
             info_dict["channels"] = channels
+            
+    # Special treatment for ABI products to retrieve sector 
+    if sensor == 'ABI':
+        if 'M' in info_dict["scene_abbr"]:
+            sector = 'M'
+        else: 
+            sector = info_dict["scene_abbr"] 
+        info_dict["sector"] =  sector   
+    
+    # Derive satellite name  
+    platform_shortname = info_dict["platform_shortname"]
+    if 'G16' == platform_shortname:
+        satellite = 'GOES-16'
+    elif 'G17' == platform_shortname:
+        satellite = 'GOES-17'
+    else:
+        raise ValueError(f"Processing of satellite {platform_shortname} not yet implemented.")
+    info_dict["satellite"] =  satellite  
+        
     # Return info dictionary
     return info_dict
 
 
-def _get_info_from_filepath(fpath, sensor, product_level):
+def _get_info_from_filepath(fpath, sensor=None, product_level=None):
     """Retrieve file information dictionary from filepath."""
     if not isinstance(fpath, str):
         raise TypeError("'fpath' must be a string.")
@@ -901,7 +982,7 @@ def _get_info_from_filepath(fpath, sensor, product_level):
     return _get_info_from_filename(fname, sensor, product_level)
 
 
-def _get_key_from_filepaths(fpaths, sensor, product_level, key):
+def _get_key_from_filepaths(fpaths, key, sensor=None, product_level=None):
     """Extract specific key information from a list of filepaths."""
     if isinstance(fpaths, str):
         fpaths = [fpaths]
@@ -909,6 +990,14 @@ def _get_key_from_filepaths(fpaths, sensor, product_level, key):
         _get_info_from_filepath(fpath, sensor, product_level)[key] for fpath in fpaths
     ]
 
+
+def get_key_from_filepaths(fpaths, key):
+    """Extract specific key information from a list of filepaths."""
+    if isinstance(fpaths, dict):
+        fpaths = {k: _get_key_from_filepaths(v, key=key) for k, v in fpaths.items()}
+    else:
+        fpaths = _get_key_from_filepaths(fpaths, key=key)
+    return fpaths 
 
 def _filter_file(
     fpath,
@@ -1067,19 +1156,22 @@ def filter_files(
 
 ####---------------------------------------------------------------------------.
 #### Search files
-def _get_sector_timedelta(sector):
-    """Get reasonable timedelta based on sector to find previous/next acquisition."""
+def _get_acquisition_max_timedelta(sector):
+    """Get reasonable timedelta based on ABI sector to find previous/next acquisition."""
     if sector == "M":
         dt = datetime.timedelta(minutes=1)
     elif sector == "C":
         dt = datetime.timedelta(minutes=5)
     elif sector == "F":
         dt = datetime.timedelta(minutes=15)  # to include all scan_mode options
+    else: # sector=None (all other sensors)  # TODO: might be improved ... 
+        dt = datetime.timedelta(minutes=15)
     return dt
 
 
-def _group_fpaths_by_key(fpaths, sensor, product_level, key="start_time"):
+def _group_fpaths_by_key(fpaths, sensor=None, product_level=None, key="start_time"):
     """Utils function to group filepaths by key contained into filename."""
+    # TODO: sensor and product_level args could be removed 
     # - Retrieve key sorting index 
     list_key_values = [
         _get_info_from_filepath(fpath, sensor, product_level)[key] for fpath in fpaths
@@ -1099,7 +1191,7 @@ def _group_fpaths_by_key(fpaths, sensor, product_level, key="start_time"):
     return fpaths_dict
 
 
-def group_files(fpaths, sensor, product_level, key="start_time"):
+def group_files(fpaths, key="start_time"):
     """
     Group filepaths by key contained into filenames.
 
@@ -1107,12 +1199,6 @@ def group_files(fpaths, sensor, product_level, key="start_time"):
     ----------
     fpaths : list
         List of filepaths.
-    sensor : str
-        Satellite sensor.
-        See `goes_api.available_sensors()` for available sensors.
-    product_level : str
-        Product level.
-        See `goes_api.available_product_levels()` for available product levels.
     key : str
         Key by which to group the list of filepaths.
         The default key is "start_time".
@@ -1124,12 +1210,10 @@ def group_files(fpaths, sensor, product_level, key="start_time"):
         Dictionary with structure {<key>: list_fpaths_with_<key>}.
 
     """
-    sensor = _check_sensor(sensor)
-    product_level = _check_product_level(product_level, product=None)
+    if isinstance(fpaths, dict): 
+        raise TypeError("It's not possible to group a dictionary ! Pass a list of filepaths instead.")
     key = _check_group_by_key(key)
-    fpaths_dict = _group_fpaths_by_key(
-        fpaths=fpaths, sensor=sensor, product_level=product_level, key=key
-    )
+    fpaths_dict = _group_fpaths_by_key(fpaths=fpaths, key=key)
     return fpaths_dict
 
 
@@ -1138,9 +1222,9 @@ def find_files(
     sensor,
     product_level,
     product,
-    sector,
     start_time,
     end_time,
+    sector=None, 
     filter_parameters={},
     group_by_key=None,
     connection_type=None,
@@ -1181,13 +1265,13 @@ def find_files(
     product : str
         The name of the product to retrieve.
         See `goes_api.available_products()` for a list of available products.
-    sector : str
-        The acronym of the sector for which to retrieve the files.
-        See `goes_api.available_sectors()` for a list of available sectors.
     start_time : datetime.datetime
         The start (inclusive) time of the interval period for retrieving the filepaths.
     end_time : datetime.datetime
         The end (exclusive) time of the interval period for retrieving the filepaths.
+    sector : str
+        The acronym of the ABI sector for which to retrieve the files.
+        See `goes_api.available_sectors()` for a list of available sectors.
     filter_parameters : dict, optional
         Dictionary specifying option filtering parameters.
         Valid keys includes: `channels`, `scan_modes`, `scene_abbr`.
@@ -1225,7 +1309,7 @@ def find_files(
     sensor = _check_sensor(sensor)
     product_level = _check_product_level(product_level, product=None)
     product = _check_product(product, sensor=sensor, product_level=product_level)
-    sector = _check_sector(sector, product=product)
+    sector = _check_sector(sector, product=product, sensor=sensor)
     start_time, end_time = _check_start_end_time(start_time, end_time)
 
     filter_parameters = _check_filter_parameters(
@@ -1269,7 +1353,8 @@ def find_files(
     if verbose:
         print(f"Searching files across {n_directories} directories.")
 
-    # Loop over each directory [TODO parallel]
+    # Loop over each directory:
+    # - TODO in parallel ?
     list_fpaths = []
     # glob_pattern = list_glob_pattern[0]
     for glob_pattern in list_glob_pattern:
@@ -1301,7 +1386,7 @@ def find_closest_start_time(
     sensor,
     product_level,
     product,
-    sector,
+    sector=None, 
     base_dir=None,
     protocol=None,
     fs_args={},
@@ -1312,6 +1397,8 @@ def find_closest_start_time(
 
     Parameters
     ----------
+    time : datetime.datetime
+        The time for which you desire to know the closest file start_time.
     base_dir : str
         Base directory path where the <GOES-**> satellite is located.
         This argument must be specified only if searching files on local storage.
@@ -1336,10 +1423,8 @@ def find_closest_start_time(
         The name of the product to retrieve.
         See `goes_api.available_products()` for a list of available products.
     sector : str
-        The acronym of the sector for which to retrieve the files.
+        The acronym of the ABI sector for which to retrieve the files.
         See `goes_api.available_sectors()` for a list of available sectors.
-    time : datetime.datetime
-        The time for which you desire to know the closest file start_time.
     filter_parameters: dict, optional
         Dictionary specifying option filtering parameters.
         Valid keys includes: `channels`, `scan_modes`, `scene_abbr`.
@@ -1348,8 +1433,8 @@ def find_closest_start_time(
     # Set time precision to minutes
     time = _check_time(time)
     time = time.replace(microsecond=0, second=0)
-    # Retrieve timedelta conditioned to sector type
-    timedelta = _get_sector_timedelta(sector)
+    # Retrieve timedelta conditioned to sector (for ABI)
+    timedelta = _get_acquisition_max_timedelta(sector)
     # Define start_time and end_time
     start_time = time - timedelta
     end_time = time + timedelta
@@ -1386,7 +1471,7 @@ def find_latest_start_time(
     sensor,
     product_level,
     product,
-    sector,
+    sector=None, 
     connection_type=None,
     base_dir=None,
     protocol=None,
@@ -1426,7 +1511,7 @@ def find_latest_start_time(
         The name of the product to retrieve.
         See `goes_api.available_products()` for a list of available products.
     sector : str
-        The acronym of the sector for which to retrieve the files.
+        The acronym of the ABI sector for which to retrieve the files.
         See `goes_api.available_sectors()` for a list of available sectors.
     filter_parameters: dict, optional
         Dictionary specifying option filtering parameters.
@@ -1455,6 +1540,8 @@ def find_latest_start_time(
         verbose=False,
     )
     # Find the latest time available
+    if len(fpath_dict) == 0: 
+        raise ValueError("No data found. Maybe try to increase `look_ahead_minutes`.")
     list_datetime = list(fpath_dict.keys())
     idx_latest = np.argmax(np.array(list_datetime))
     datetime_latest = list_datetime[idx_latest]
@@ -1467,7 +1554,7 @@ def find_closest_files(
     sensor,
     product_level,
     product,
-    sector,
+    sector=None, 
     connection_type=None,
     base_dir=None,
     protocol=None,
@@ -1507,7 +1594,7 @@ def find_closest_files(
         The name of the product to retrieve.
         See `goes_api.available_products()` for a list of available products.
     sector : str
-        The acronym of the sector for which to retrieve the files.
+        The acronym of the ABI sector for which to retrieve the files.
         See `goes_api.available_sectors()` for a list of available sectors.
     time : datetime.datetime
         The time for which you desire to retrieve the files with closest start_time.
@@ -1525,7 +1612,7 @@ def find_closest_files(
     time = _check_time(time)
     time = time.replace(microsecond=0, second=0)
     # Retrieve timedelta conditioned to sector type
-    timedelta = _get_sector_timedelta(sector)
+    timedelta = _get_acquisition_max_timedelta(sector)
     # Define start_time and end_time
     start_time = time - timedelta
     end_time = time + timedelta
@@ -1562,7 +1649,7 @@ def find_latest_files(
     sensor,
     product_level,
     product,
-    sector,
+    sector=None, 
     connection_type=None,
     base_dir=None,
     protocol=None,
@@ -1617,7 +1704,7 @@ def find_latest_files(
         The name of the product to retrieve.
         See `goes_api.available_products()` for a list of available products.
     sector : str
-        The acronym of the sector for which to retrieve the files.
+        The acronym of the ABI sector for which to retrieve the files.
         See `goes_api.available_sectors()` for a list of available sectors.
     filter_parameters : dict, optional
         Dictionary specifying option filtering parameters.
@@ -1669,7 +1756,7 @@ def find_previous_files(
     sensor,
     product_level,
     product,
-    sector,
+    sector=None, 
     filter_parameters={},
     connection_type=None,
     base_dir=None,
@@ -1722,7 +1809,7 @@ def find_previous_files(
         The name of the product to retrieve.
         See `goes_api.available_products()` for a list of available products.
     sector : str
-        The acronym of the sector for which to retrieve the files.
+        The acronym of the ABI sector for which to retrieve the files.
         See `goes_api.available_sectors()` for a list of available sectors.
     filter_parameters : dict, optional
         Dictionary specifying option filtering parameters.
@@ -1740,7 +1827,7 @@ def find_previous_files(
 
     """
     sensor = _check_sensor(sensor)
-    sector = _check_sector(sector)
+    sector = _check_sector(sector, sensor=sensor)
     product_level = _check_product_level(product_level)
     # Set time precision to minutes
     start_time = _check_time(start_time)
@@ -1765,7 +1852,7 @@ def find_previous_files(
             f"The closest start_time is '{closest_time}'"
         )
     # Retrieve timedelta conditioned to sector type
-    timedelta = _get_sector_timedelta(sector)
+    timedelta = _get_acquisition_max_timedelta(sector)
     # Define start_time and end_time
     start_time = closest_time - timedelta * (N+1) # +1 for when include_start_time=False
     end_time = closest_time
@@ -1828,7 +1915,7 @@ def find_next_files(
     sensor,
     product_level,
     product,
-    sector,
+    sector=None, 
     filter_parameters={},
     connection_type=None,
     base_dir=None,
@@ -1881,7 +1968,7 @@ def find_next_files(
         The name of the product to retrieve.
         See `goes_api.available_products()` for a list of available products.
     sector : str
-        The acronym of the sector for which to retrieve the files.
+        The acronym of the ABI sector for which to retrieve the files.
         See `goes_api.available_sectors()` for a list of available sectors.
     filter_parameters : dict, optional
         Dictionary specifying option filtering parameters.
@@ -1899,7 +1986,7 @@ def find_next_files(
 
     """
     sensor = _check_sensor(sensor)
-    sector = _check_sector(sector)
+    sector = _check_sector(sector, sensor=sensor)
     product_level = _check_product_level(product_level)
     # Set time precision to minutes
     start_time = _check_time(start_time)
@@ -1924,7 +2011,7 @@ def find_next_files(
             f"The closest start_time is '{closest_time}'"
         )
     # Retrieve timedelta conditioned to sector type
-    timedelta = _get_sector_timedelta(sector)
+    timedelta = _get_acquisition_max_timedelta(sector)
     # Define start_time and end_time
     start_time = closest_time
     end_time = closest_time + timedelta * (N+1) # +1 for when include_start_time=False

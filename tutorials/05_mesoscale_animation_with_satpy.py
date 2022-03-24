@@ -8,6 +8,7 @@ Created on Wed Mar 23 17:36:34 2022
 import fsspec
 from satpy import Scene, MultiScene
 from satpy.readers import FSFile
+from dask.diagnostics import ProgressBar
 from goes_api import find_latest_files
 
 ###---------------------------------------------------------------------------.
@@ -86,4 +87,7 @@ mscn.load(["true_color"])
 # - Resample channels on a common grid (default the highest resolution)
 new_mscn = mscn.resample(resampler="native")
 # - Create the animation
-new_mscn.save_animation("/tmp/{name}_{start_time:%Y%m%d_%H%M%S}.mp4", fps=5)
+with ProgressBar():
+    new_mscn.save_animation("/tmp/{name}_{start_time:%Y%m%d_%H%M%S}.mp4", fps=5) # batch_size=4)
+
+###---------------------------------------------------------------------------.
