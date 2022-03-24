@@ -1,13 +1,10 @@
 # GOES API - An API to download and query GOES satellite data.
 
 The code in this repository provides an API to download, query and filter GOES16 and GOES17 satellite data.
-Data can be retrieve for sensors ABI, EXIS, GLM, MAG, SEIS and SUVI.
 
-Documentation is available at XXXXX
-
-ATTENTION: The code will like be the subject of progressive updates in the coming  months.
-
-The folder `docs` contains documents with various information related to GOES data products.
+Data download and query/filtering is available:
+- for local file systems, Google Cloud Storage and AWS S3.
+- for sensors ABI, EXIS, GLM, MAG, SEIS and SUVI.
 
 The folder `tutorials` provide the following jupyter notebooks, describing various features of `GOES_API`:
 
@@ -22,6 +19,10 @@ The folder `tutorials` provide the following jupyter notebooks, describing vario
 [`read_bucket_data.ipynb`]: https://github.com/ghiggi/goes_api/blob/main/tutorials/03_read_cloud_bucket_data.py
 [`read_bucket_data_with_satpy.ipynb`]: https://github.com/ghiggi/goes_api/blob/main/tutorials/03_read_cloud_bucket_data_with_satpy.py
 [`kerchunk_data.ipynb`]: https://github.com/ghiggi/goes_api/blob/main/tutorials/04_kerchunk_dataset.py
+
+The folder `docs` contains documents with various information related to GOES data products.
+
+Documentation is available at XXXXX
 
 ## Installation
 
