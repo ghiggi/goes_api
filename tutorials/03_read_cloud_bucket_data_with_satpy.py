@@ -100,13 +100,14 @@ del files, satpy_files  # GOOD PRACTICE TO CLOSE CONNECTIONS !!!
 # - For more subtleties: https://github.com/pytroll/satpy/pull/1321
 
 import appdirs
+from fsspec.implementations.cached import CachingFileSystem
 
 cachedir = appdirs.user_cache_dir("ABI-block-cache")
 storage_options = {"anon": True}
 fs_s3 = fsspec.filesystem(protocol="s3", **storage_options)
 
 # Block cache
-fs_block = fsspec.implementations.cached.CachingFileSystem(
+fs_block = CachingFileSystem(
     fs=fs_s3,
     cache_storage=cachedir,
     cache_check=600,
@@ -135,10 +136,11 @@ del files, satpy_files  # GOOD PRACTICE TO CLOSE CONNECTIONS !!!
 # - Docs: https://filesystem-spec.readthedocs.io/en/latest/api.html#fsspec.implementations.cached.SimpleCacheFileSystem
 
 import appdirs
+from fsspec.implementations.cached import SimpleCacheFileSystem
 
 cachedir = appdirs.user_cache_dir("ABI-simple-cache")
 
-fs_simple = fsspec.implementations.cached.SimpleCacheFileSystem(
+fs_simple = SimpleCacheFileSystem(
     fs=fs_s3,
     cache_storage=cachedir,
     check_files=False,
