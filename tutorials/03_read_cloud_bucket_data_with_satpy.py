@@ -59,7 +59,7 @@ fpaths = find_latest_files(
 fpaths = list(fpaths.values())[0]
 
 # - Open files
-files = fsspec.open_files(fpaths, s3={"anon": True})
+files = fsspec.open_files(fpaths, anon=True)
 type(files)  # fsspec.core.OpenFiles
 type(files[0])  # fsspec.core.OpenFile
 files[0].full_name
@@ -116,7 +116,7 @@ fs_block = CachingFileSystem(
     same_names=False,
 )
 
-files = fsspec.open_files(fpaths, s3={"anon": True}, block_size=2**20)
+files = fsspec.open_files(fpaths, anon=True)
 # - Define satpy FSFile
 satpy_files = [FSFile(file, fs=fs_block) for file in files]
 scn = Scene(filenames=satpy_files, reader="abi_l1b")
@@ -148,7 +148,7 @@ fs_simple = SimpleCacheFileSystem(
     same_names=True,
 )
 
-files = fsspec.open_files(fpaths, s3={"anon": True})
+files = fsspec.open_files(fpaths, anon=True)
 # - Define satpy FSFile
 satpy_files = [FSFile(file, fs=fs_simple) for file in files]
 scn = Scene(filenames=satpy_files, reader="abi_l1b")
