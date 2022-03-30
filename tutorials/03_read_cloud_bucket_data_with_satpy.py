@@ -59,7 +59,7 @@ fpaths = find_latest_files(
 fpaths = list(fpaths.values())[0]
 
 # - Open files
-files = fsspec.open_files(fpaths, s3={"anon": True})
+files = fsspec.open_files(fpaths, anon=True)
 type(files)  # fsspec.core.OpenFiles
 type(files[0])  # fsspec.core.OpenFile
 files[0].full_name
@@ -100,13 +100,14 @@ del files, satpy_files  # GOOD PRACTICE TO CLOSE CONNECTIONS !!!
 # - For more subtleties: https://github.com/pytroll/satpy/pull/1321
 
 import appdirs
+from fsspec.implementations.cached import CachingFileSystem
 
 cachedir = appdirs.user_cache_dir("ABI-block-cache")
 storage_options = {"anon": True}
 fs_s3 = fsspec.filesystem(protocol="s3", **storage_options)
 
 # Block cache
-fs_block = fsspec.implementations.cached.CachingFileSystem(
+fs_block = CachingFileSystem(
     fs=fs_s3,
     cache_storage=cachedir,
     cache_check=600,
@@ -115,7 +116,7 @@ fs_block = fsspec.implementations.cached.CachingFileSystem(
     same_names=False,
 )
 
-files = fsspec.open_files(fpaths, s3={"anon": True}, block_size=2**20)
+files = fsspec.open_files(fpaths, anon=True)
 # - Define satpy FSFile
 satpy_files = [FSFile(file, fs=fs_block) for file in files]
 scn = Scene(filenames=satpy_files, reader="abi_l1b")
@@ -135,10 +136,11 @@ del files, satpy_files  # GOOD PRACTICE TO CLOSE CONNECTIONS !!!
 # - Docs: https://filesystem-spec.readthedocs.io/en/latest/api.html#fsspec.implementations.cached.SimpleCacheFileSystem
 
 import appdirs
+from fsspec.implementations.cached import SimpleCacheFileSystem
 
 cachedir = appdirs.user_cache_dir("ABI-simple-cache")
 
-fs_simple = fsspec.implementations.cached.SimpleCacheFileSystem(
+fs_simple = SimpleCacheFileSystem(
     fs=fs_s3,
     cache_storage=cachedir,
     check_files=False,
@@ -146,7 +148,7 @@ fs_simple = fsspec.implementations.cached.SimpleCacheFileSystem(
     same_names=True,
 )
 
-files = fsspec.open_files(fpaths, s3={"anon": True})
+files = fsspec.open_files(fpaths, anon=True)
 # - Define satpy FSFile
 satpy_files = [FSFile(file, fs=fs_simple) for file in files]
 scn = Scene(filenames=satpy_files, reader="abi_l1b")
