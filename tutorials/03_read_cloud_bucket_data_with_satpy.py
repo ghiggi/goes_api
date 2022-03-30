@@ -102,11 +102,10 @@ del files, satpy_files  # GOOD PRACTICE TO CLOSE CONNECTIONS !!!
 import appdirs
 from fsspec.implementations.cached import CachingFileSystem
 
+# - Define cache
 cachedir = appdirs.user_cache_dir("ABI-block-cache")
 storage_options = {"anon": True}
 fs_s3 = fsspec.filesystem(protocol="s3", **storage_options)
-
-# Block cache
 fs_block = CachingFileSystem(
     fs=fs_s3,
     cache_storage=cachedir,
@@ -116,15 +115,16 @@ fs_block = CachingFileSystem(
     same_names=False,
 )
 
-files = fsspec.open_files(fpaths, anon=True)
 # - Define satpy FSFile
-satpy_files = [FSFile(file, fs=fs_block) for file in files]
+# --> TODO: PR to pass block_size to FSFile
+satpy_files = [FSFile(fpath, fs=fs_block) for fpath in fpaths]
 scn = Scene(filenames=satpy_files, reader="abi_l1b")
+
 # - Display a channel
 scn.load(scn.available_dataset_names())
 scn.show("C01")
 
-del files, satpy_files  # GOOD PRACTICE TO CLOSE CONNECTIONS !!!
+del satpy_files  # GOOD PRACTICE TO CLOSE CONNECTIONS !!!
 
 ###---------------------------------------------------------------------------.
 #### Define custom simplecache
@@ -138,8 +138,8 @@ del files, satpy_files  # GOOD PRACTICE TO CLOSE CONNECTIONS !!!
 import appdirs
 from fsspec.implementations.cached import SimpleCacheFileSystem
 
+# - Define cache
 cachedir = appdirs.user_cache_dir("ABI-simple-cache")
-
 fs_simple = SimpleCacheFileSystem(
     fs=fs_s3,
     cache_storage=cachedir,
@@ -148,14 +148,13 @@ fs_simple = SimpleCacheFileSystem(
     same_names=True,
 )
 
-files = fsspec.open_files(fpaths, anon=True)
 # - Define satpy FSFile
-satpy_files = [FSFile(file, fs=fs_simple) for file in files]
+satpy_files = [FSFile(fpath, fs=fs_simple) for fpath in fpaths]
 scn = Scene(filenames=satpy_files, reader="abi_l1b")
 # - Display a channel
 scn.load(scn.available_dataset_names())
 scn.show("C01")
 
-del files, satpy_files  # GOOD PRACTICE TO CLOSE CONNECTIONS !!!
+del satpy_files  # GOOD PRACTICE TO CLOSE CONNECTIONS !!!
 
 ###---------------------------------------------------------------------------.
