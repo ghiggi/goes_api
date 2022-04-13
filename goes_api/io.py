@@ -774,10 +774,12 @@ def _switch_to_https_fpath(fpath, protocol):
          String specifying the cloud bucket storage from which to retrieve
          the data. Use `goes_api.available_protocols()` to retrieve available protocols.
     """
-    # https://storage.googleapis.com , https://storage.cloud.google.com
+    # GCS note
+    # https://storage.googleapis.com (download and byte connection)
+    # https://storage.cloud.google.com (just download)
     satellite = infer_satellite_from_path(fpath)
     https_base_url_dict = {
-        "gcs": "https://storage.cloud.google.com/gcp-public-data-{}".format(satellite),
+        "gcs": "https://storage.googleapis.com/gcp-public-data-{}".format(satellite),
         "s3": "https://noaa-{}.s3.amazonaws.com".format(satellite.replace("-", "")),
     }
     base_url = https_base_url_dict[protocol]
