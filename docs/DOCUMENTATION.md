@@ -1,32 +1,70 @@
-## GOES ABI SCAN MODES 
 
-GOES ABI has currently 3 types of `scan_modes`.
+## Operational events 
 
-Mode 3 (GOES16, GOES17)
-- Till April 2, 2019 
-- FULL DISK every 15 minutes 
-- CONUS every 5 minutes
-- Mesoscale every 1 minutes  (TODO: when 30 seconds)
+GOES-16 (GOES-R)
+- November 30 - December 11 2017: Drifting from 89.5 °W to the GOES-East operational location (75.2° W)   [todo: check if 89.5 is correct]
+- Nominal operation resumed on December 18, 2017
+- Declared GOES-EAST on December 18, 2017
 
-Mode 3 GOES17 Cooling Tim 
-- During some periods of the year
-- CONUS not scanned 
-- Mesoscale M1 and M2 every 2 minutes
+GOES-13
+- Turned off on January 8, 2018 (replaced by GOES-16)
 
-Mode 6 (difference between GOES-16  and GOES-17)
-- Since  April 2, 2019 
-- FULL DISK every 10 minutes 
-- CONUS every 5 minutes
-- Mesoscale every 1 minutes  (TODO: when 30 seconds)
+GOES-17 (GOES-S)
+- Launched on March 1, 2018 
+- October 24 - November 13, 2018: Drifting from XXXX °W to the GOES-West operational location (137.2° W)
+- Nominal operations resumed on November 15, 2018
+- Declared GOES-West on February 12, 2019
 
-Mode 4 
-- Continuous 5-minute full disk imagery 
-- CONUS and Mesoscale products are not available
-- Example dates: `datetime.datetime(2018,10,1, ...,...,...) # TODO`
+GOES-18 Transition
+- https://www.ospo.noaa.gov/Operations/GOES/transition.html 
 
-GOES 16 and 17 ABI scan mode timetable are available [here](https://www.goes-r.gov/users/abiScanModeInfo.html)
+GOES ReBroadcast (GRB) 
 
-A video of GOES ABI scan strategy is available [here](shttps://www.youtube.com/watch?v=qCAPwgQR13w&ab_channel=NOAASatellites)
+
+ABI intro 
+- https://www.goes-r.gov/featureStories/transformingEnergy.html
+- https://www.goes-r.gov/spacesegment/abi.html
+- https://rammb.cira.colostate.edu/training/visit/training_sessions/basic_operations_of_abi_on_goes_r/old_video/presentation_html5.html
+
+ABI bands and composites 
+- http://cimss.ssec.wisc.edu/goes/GOESR_QuickGuides.html
+- https://rammb.cira.colostate.edu/training/visit/quick_guides/
+- https://www.ssec.wisc.edu/~scottl/SHyMet/
+
+Training material 
+- https://rammb2.cira.colostate.edu/training/visit/training_sessions/ 
+
+Status
+- https://www.ospo.noaa.gov/Operations/GOES/status.html
+- http://cimss.ssec.wisc.edu/goes-r/abi-/band_statistics_imagery.html 
+- https://www.goes-r.gov/users/GOES-17-ABI-Performance.html 
+
+Navigation and Registration Status
+- https://www.ospo.noaa.gov/Operations/GOES/goes-inrstats.html 
+
+Weekly Operations Plan 
+- https://noaasis.noaa.gov/cemscs/goeswkly.txt 
+
+Calibration event log 
+- https://www.star.nesdis.noaa.gov/GOESCal/goes_SatelliteAnomalies.php 
+
+Precomputed angles/latlon 
+- https://www.star.nesdis.noaa.gov/pub/smcd/spb/fwu/tmp/latlon_angle/  (lon=-135.0 deg) and East (lon=-75.0)
+
+GOES weighting functions 
+- https://cimss.ssec.wisc.edu/goes/wf/
+
+Imagery 
+- RAMB Slider: http://rammb-slider.cira.colostate.edu/
+- SSEC GeoSphere: https://geosphere.ssec.wisc.edu/#coordinate:0,0;
+- SSEC Geo Browser: https://www.ssec.wisc.edu/data/geo/#/animation?satellite=goes-16-17-comp
+- SSEC Real Erth: https://re.ssec.wisc.edu/?products=G16-ABI-FD-BAND02.100,G16-ABI-FD-BAND13.65&center=36.62792196407514,-94.74951171874999&zoom=4&width=949&height=776&timeproduct=G16-ABI-FD-BAND13&timespan=-6t&animationspeed=50&labels=lines
+- Zoom Earth: https://zoom.earth/#view=37.4,-116.1,4z/date=2022-04-14,16:20,+2
+- GOES Image Viewer: https://www.star.nesdis.noaa.gov/GOES/index.php
+- Static and Time-Difference Imagery: http://cimss.ssec.wisc.edu/goes-r/abi-/static_and_timediff_imagery.html 
+
+Other infos 
+- http://cimss.ssec.wisc.edu/goes/goesdata.html 
 
 ## GOES L1B ABI FILE SIZE STATISTICS 
 
@@ -84,7 +122,6 @@ The L2 Cloud and Moisture Imagery (MCMIP) products contains all the 16 spectral 
 - [goesmirror](https://github.com/meteoswiss-mdr/goesmirror/blob/master/goesmirror/goesmirror.py)
 - [goes-py](https://github.com/palexandremello/goes-py)
 - [GOES](https://github.com/joaohenry23/GOES)
-
 
 ## GOES Products & Useful links
 https://www.goes-r.gov/products/overview.html
