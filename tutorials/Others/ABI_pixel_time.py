@@ -26,7 +26,7 @@ chunksize_dict = {"F": (226, 226),
 
 #-----------------------------------------------------------------------------.
 # Precompute pixel offsets
-satellites = ["goes-16", "goes-16"]
+satellites = ["goes-16", "goes-17"]
 scan_modes = ["M3","M4", "M6"]
 sectors = ["F", "C", "M"]
 resolutions = ["0.5km", "1km", "2km"]
@@ -68,6 +68,7 @@ for satellite in satellites:
                 # Save to disk 
                 fname = "_".join([satellite, sector, scan_mode, resolution]) + ".nc"
                 fpath = os.path.join(dst_dir, fname)
+                print("Writing:", fpath)
                 ds.to_netcdf(fpath, encoding=encoding)
          
 #-----------------------------------------------------------------------------.
