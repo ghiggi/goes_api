@@ -6,13 +6,19 @@ Created on Tue Apr 19 14:29:21 2022
 @author: ghiggi
 """
 import os
+import datetime
+import numpy as np 
 import xarray as xr 
 from goes_api.io import (
     _check_satellite,
     _check_scan_mode,
     _check_sector
 )
-    
+from goes_api.abi_utils import (
+    get_scan_mode_from_attrs,
+    get_sector_from_attrs,
+    get_resolution_from_attrs,
+)
     
 def _get_LUT_dict(): 
     LUT_dict = {
@@ -63,7 +69,10 @@ def _get_native_pixel_time_offset(satellite, scan_mode, resolution, sector):
     satellite = _check_satellite(satellite)
     scan_mode = _check_scan_mode(scan_mode)
     sector = _check_sector(sector, sensor='ABI')
- 
+    resolution = str(resolution)
+    if resolution not in ["500", "1000", "2000"]:
+        raise ValueError("Valid nadir 'resolution' are '500','1000' and '2000' m.")
+    
     # Open LUT pixel offset 
     fpath = _get_LUT_filepath(satellite, scan_mode)
     ds = xr.open_dataset(fpath)
@@ -82,26 +91,28 @@ def _get_native_pixel_time_offset(satellite, scan_mode, resolution, sector):
         raise NotImplementedError("Available only for sector F, C and M.")
         
     # Scale based on resolution
-    if resolution == "500m":
+    if resolution == "500":
        arr = da.data.repeat(4, axis = 0).repeat(4, axis = 1)
        da =  xr.DataArray(arr, dims=['y','x'])
        da.name = resolution
-    elif resolution == "1km":
+    elif resolution == "1000":
        arr = da.data.repeat(2, axis = 0).repeat(2, axis = 1)
        da =  xr.DataArray(arr, dims=['y','x'])
        da.name = resolution
-    else: # resolution 2km   
+    else: # resolution == 2000  
        da.name = resolution
+    
     # Remove attributes
     da.attrs = {}
     # Return pixel offset 
     return da 
 
-def _get_pixel_time_offset(satellite, scan_mode, resolution, sector):
+def get_pixel_time_offset(satellite, sector, scan_mode, resolution):
     # Check inputs 
     satellite = _check_satellite(satellite)
     scan_mode = _check_scan_mode(scan_mode)
     sector = _check_sector(sector, sensor='ABI')
+    resolution = str(resolution)
     
     # Retrieve package fpath 
     package_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -111,20 +122,107 @@ def _get_pixel_time_offset(satellite, scan_mode, resolution, sector):
     fpath = os.path.join(package_dir, "data", "ABI_Pixel_TimeOffset", fname)
     
     # Open file 
-    ds = xr.open_dataset(fpath)
-    # Convert to timedelta 
-    for var in ds.data_vars:
-        ds[var] = ds[var].astype('m8[s]')
+    ds = xr.open_dataset(fpath) # TODO: daskify 
+    var = list(ds.data_vars)[0]
+    da = ds[var].astype('m8[s]')
+    da.name = "ABI_pixel_time_offset"
     # Return data
-    return ds
+    return da
+
+def get_ABI_pixel_time(data):
+    if not isinstance(data, (xr.Dataset, xr.DataArray)): 
+        raise TypeError("Provide xr.Dataset or (satpy scene) xr.DataArray.")
     
-
-
+    # Define attributes to keep 
+    attrs_keys = [# satpy 
+                  'orbital_parameters',
+                  'area',
+                  'resolution', 
+                  'grid_mapping', 
+                  'cell_methods',
+                  'platform_name',
+                  'platform_shortname',
+                  'orbital_slot',
+                  'sensor',
+                  'scan_mode',
+                  'start_time',
+                  'end_time',
+                  # L1B/L2 products 
+                  "platform_ID",
+                  "instrument_type",
+                  "timeline_id",
+                  "spatial_resolution",
+                  "time_coverage_start",
+                  "time_coverage_end", 
+                  ]
+    attrs = data.attrs.copy()
+    # If satpy DataArray
+    if isinstance(data, xr.DataArray):
+        try: 
+            satellite = attrs['platform_name']
+            scan_mode = attrs['scan_mode']
+            sector = attrs['scene_abbr'][0]
+            resolution = attrs['resolution']
+            start_time = attrs['start_time']  
+            end_time = attrs['end_time']  
+        except:
+            raise TypeError("The provided xr.DataArray must be extracted by "
+                            "a satpy scene object using scn['<channel>'].")
+    # Else if ABI L1B or L2 product         
+    else:   
+      try: 
+          satellite = attrs['platform_ID']
+          scan_mode = get_scan_mode_from_attrs(attrs)
+          sector = get_sector_from_attrs(attrs)
+          resolution = get_resolution_from_attrs(attrs)
+          start_time = datetime.datetime.fromisoformat(attrs['time_coverage_start'][:-3])
+          end_time = datetime.datetime.fromisoformat(attrs['time_coverage_end'][:-3])
+          # # Extract first variable (which should be 'Rad' or the 'L2' product)
+          # var = list(data.data_vars)[0]
+          # data = data[var]
+      except:
+          raise TypeError("The provided xr.Dataset seems not an ABI L1B or L2 file. "
+                          "Please report the issue.")  
+    
+    # Check resolution 
+    resolution = str(resolution)
+    if resolution not in ['500', '1000', '2000']:
+        raise NotImplementedError("ABI pixel scan time implemented only for "
+                                  "500, 1000 and 2000 m nadir resolution.")
+    
+    # Retrieve time offset 
+    time_offset = get_pixel_time_offset(satellite=satellite, 
+                                        sector=sector,
+                                        scan_mode=scan_mode, 
+                                        resolution=resolution, 
+                                        )
+    # Compute pixel scan time 
+    pixel_time = time_offset + np.datetime64(start_time)
+    pixel_time.name = "ABI_pixel_time"
+    
+    # Add file coordinates 
+    pixel_time = pixel_time.assign_coords(data.coords)
+    
+    # Do not check latest pixel time < file end_time
+    # - Would require masking Full Disc which is computationally inefficient
+    # assert pixel_time.max() < np.datetime64(end_time)
+    
+    # Add attributes 
+    new_attrs = {k: attrs[k] for k in attrs_keys if attrs.get(k, None) is not None}
+    new_attrs['long_name'] = "ABI Pixel Scan Time"
+    new_attrs['standard_name'] = "abi_pixel_scan_time"
+    new_attrs['comments'] = "The pixel scan time maximum error is 40 s."
+    pixel_time.attrs = new_attrs
+    
+    # Return pixel_time DataArray
+    return pixel_time
+    
+#------------------------------------------------------------------------------.
 # from goes_api.abi_pixel_time import _get_native_pixel_time_offset
 # satellite = "G16"
 # sector = "F"
 # scan_mode = "M3"
-# resolution = "500m"
+# resolution = "500"
 
  
 # t_i = time.time()

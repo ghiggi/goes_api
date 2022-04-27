@@ -24,6 +24,7 @@ from .utils.time import _dt_to_year_doy_hour
 
 ####--------------------------------------------------------------------------.
 #### Alias
+# TODO: Change goes_api from goes-16 to G16 ?    
 _satellites = {
     "goes-16": ["16", "G16", "GOES-16", "GOES16", "EAST", "GOES-EAST"],
     "goes-17": ["17", "G17", "GOES-17", "GOES17", "WEST", "GOES-WEST"],
