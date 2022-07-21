@@ -345,11 +345,14 @@ def _check_product(product, sensor=None, product_level=None):
 
 def _check_time(time):
     """Check time validity."""
-    if not isinstance(time, (datetime.datetime, datetime.date, str)):
+    if not isinstance(time, (datetime.datetime, datetime.date, np.datetime64, str)):
         raise TypeError(
             "Specify time with datetime.datetime objects or a "
             "string of format 'YYYY-MM-DD hh:mm:ss'."
         )
+    # If np.datetime, convert to datetime.datetime
+    if isinstance(time, np.datetime64):
+        time = time.astype('datetime64[s]').tolist()
     # If datetime.date, convert to datetime.datetime
     if not isinstance(time, (datetime.datetime, str)):
         time = datetime.datetime(time.year, time.month, time.day, 0, 0, 0)
