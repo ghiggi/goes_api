@@ -20,12 +20,11 @@ GOES-18 Transition
 
 GOES ReBroadcast (GRB) 
 
-
 ABI intro 
 - https://www.goes-r.gov/featureStories/transformingEnergy.html
 - https://www.goes-r.gov/spacesegment/abi.html
 - https://rammb.cira.colostate.edu/training/visit/training_sessions/basic_operations_of_abi_on_goes_r/old_video/presentation_html5.html
-
+ 
 ABI bands and composites 
 - http://cimss.ssec.wisc.edu/goes/GOESR_QuickGuides.html
 - https://rammb.cira.colostate.edu/training/visit/quick_guides/
@@ -110,6 +109,21 @@ Other notes
 The L1b Radiances and L2 Cloud and Moisture Imagery (CMIP) products have separate netCDF files for each of the 16 spectral bands.
 The L2 Cloud and Moisture Imagery (MCMIP) products contains all the 16 spectral bands into a single file.
 
+## ABI Raw Data  
+Data are saved as 16-bit scaled integers, rather than 32-bit floating point values.
+To unpack:  unpacked_value = packed_value * scale_factor + add_offset
+To pack: packed_value = (unpacked_value - add_offset) / scale_factor 
+--> The scale factor is calculated with the formula (Max Value - Min Value)/65530
+
+## ABI Data Processing
+- For reflective bands (1-6), convert to reflectance.
+- For the emissive bands (7-16), convert to brightness temperature (Kelvin).
+- It is recommended to always use the coefficients embedded in the file metadata 
+  for conversion to reflectance or brightness temperature.
+
+## ABI Data quality flags (DQFs)
+- Quality scores: https://qcweb.ssec.wisc.edu/web/abi_quality_scores/
+
 
 ## Cloud Bucket Products 
 - AWS: - https://docs.opendata.aws/noaa-goes16/cics-readme.html
@@ -156,7 +170,6 @@ Microsoft West Europe Azure Blob Storage  (only limited products)
 - [adlfs](https://github.com/fsspec/adlfs)  (via azure.storage.blob ???)
 
 ## Example cloud bucket url  
-
 - "gs://gcp-public-data-goes-16/ABI-L1b-RadF/2017/258/18/OR_ABI-L1b-RadF-M3C14_G16_s20172581800377_e20172581811144_c20172581811208.nc"
 - "s3://noaa-goes16/ABI-L1b-RadF/2019/321/14/OR_ABI-L1b-RadF-M6C01_G16_s20193211440283_e20193211449591_c20193211450047.nc"
  
@@ -164,7 +177,6 @@ Microsoft West Europe Azure Blob Storage  (only limited products)
 - https://www.ncei.noaa.gov/access/cloud-access
 
 ## Other interesting dataset 
-
 NOAA Global Hydro Estimator (GHE)
 - https://microsoft.github.io/AIforEarthDataSets/data/ghe.html
 - https://registry.opendata.aws/noaa-ghe/
@@ -175,7 +187,6 @@ GHCN-D
 
 ## GEO imagery 
 - https://satepsanone.nesdis.noaa.gov/
-
 
 ##  THREDDS Catalogs
 - https://www.unidata.ucar.edu/software/mcidas/adde_servers.html (lot of link)

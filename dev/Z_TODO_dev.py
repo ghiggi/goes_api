@@ -6,12 +6,23 @@ Created on Tue Mar 22 11:04:53 2022
 @author: ghiggi
 """
 #------------------------------------------------------------------------------.
-# GLM: 
-# - https://blaylockbk.github.io/goes2go/_build/html/user_guide/notebooks/field-of-view_GLM.html
-# - https://blaylockbk.github.io/goes2go/_build/html/user_guide/notebooks/field-of-view_GLM_Edges.html
-# - https://github.com/joaohenry23/GOES/blob/master/examples/index.ipynb
 
 # -----------------------------------------------------------------------------.
+### Colab Tutorials 
+# https://colab.research.google.com/drive/1RkS4HpbVUtNZ6UQm4-bvEQpp7jXXB3lJ?usp=sharing#scrollTo=u0kc-GmGRUIl
+
+
+# -----------------------------------------------------------------------------.
+
+# TODO: Build time series of attributes (coords of xarray)
+# --> Use small band file for ABI
+# - nominal_satellite_subpoint_lon
+# - nominal_satellite_subpoint_lat
+# - nominal_satellite_subpoint_height
+# - scan mode 
+# - percent_uncorrectable_L0_errors
+
+
 # TODO: Plot scan modes offsets 
 
 # TODO: Identify 30 seconds imagery
@@ -123,3 +134,8 @@ def _attrs_2_coords(ds, attrs):
 # - https://github.com/space-physics/GOESplot/blob/main/src/goesplot/io.py
 
 ####--------------------------------------------------------------------------.
+### VECTORIZE: Create contours shapefiles from raster grid
+# - Grid --> Contours --> Shapefile (--> Tracking)
+# https://github.com/daniellelosos/GOES-R_NetCDF_to_Shapefile/blob/main/Continuous%20variable%20to%20contour%20to%20shapefile.ipynb
+# - Binary Grid --> Shapefile 
+# https://github.com/daniellelosos/GOES-R_NetCDF_to_Shapefile/blob/main/Discrete%20variable%20to%20shapefile.ipynb

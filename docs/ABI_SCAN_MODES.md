@@ -3,27 +3,27 @@
 GOES ABI has currently 3 types of `scan_modes`.
 
 Mode 3 (GOES16, GOES17)
-- Till April 2, 2019 
+- Default operational mode till April 2, 2019 
 - FULL DISK every 15 minutes 
-- CONUS every 5 minutes
+- CONUS/PACUS every 5 minutes
 - Mesoscale every 1 minutes  (TODO: when 30 seconds)
 
 Mode 6 (difference between GOES-16  and GOES-17)
-- Since  April 2, 2019 
+- Default operational mode till since April 2, 2019 
 - FULL DISK every 10 minutes 
-- CONUS every 5 minutes
+- CONUS/PACUS every 5 minutes
 - Mesoscale every 1 minutes  (TODO: when 30 seconds)
 
 Mode 4 
-- Continuous 5-minute full disk imagery 
+- FULL DISK every 5 minutes
 - CONUS and Mesoscale products are not available
 - Example dates: `datetime.datetime(2018,10,1, ...,...,...) # TODO`  
 
 Mode 3 GOES17 Cooling Time
-- During some periods of the year between 06:00 and 12:00 UTC
+- During four time periods of the year between 06:00 and 12:00 UTC
+- FULL DISK every 15 minutes 
 - CONUS not scanned 
 - Mesoscale M1 and M2 every 2 minutes
-- Every day during following periods
 
 Periods: 
 - February 6 - February 28, 2021

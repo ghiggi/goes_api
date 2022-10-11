@@ -76,11 +76,13 @@ ds['DQF'].attrs["flag_meanings"]
 np.unique(ds["DQF"].data[~np.isnan(ds["DQF"].data)], return_counts=True)  
 
 # - Plot RRQPE field
+da = ds['RRQPE']
 import matplotlib.colors as colors
 norm = colors.LogNorm(vmin=1, vmax=100)
-ds['RRQPE'].where(ds['RRQPE']>1).plot.imshow(interpolation="nearest", norm=norm, cmap="Spectral_r")
+da.where(da > 1).plot.imshow(interpolation="nearest", norm=norm, cmap="Spectral_r")
 plt.show()
 
 # - Plot DQF
 ds["DQF"].plot.imshow()
 plt.show()
+
