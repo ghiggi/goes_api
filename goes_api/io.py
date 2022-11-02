@@ -1345,8 +1345,6 @@ def find_files(
     )
 
     # Define time directories
-    start_year, start_doy, start_hour = _dt_to_year_doy_hour(start_time)
-    end_year, end_doy, end_hour = _dt_to_year_doy_hour(end_time)
     list_hourly_times = pd.date_range(start_time, 
                                       end_time + datetime.timedelta(hours=1), 
                                       freq="1h")

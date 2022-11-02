@@ -129,6 +129,7 @@ def get_pixel_time_offset(satellite, sector, scan_mode, resolution):
     # Return data
     return da
 
+
 def get_ABI_pixel_time(data):
     if not isinstance(data, (xr.Dataset, xr.DataArray)): 
         raise TypeError("Provide xr.Dataset or (satpy scene) xr.DataArray.")
