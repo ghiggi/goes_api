@@ -1,22 +1,33 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Created on Tue Apr 19 14:29:21 2022
 
-@author: ghiggi
-"""
+# Copyright (c) 2022 Ghiggi Gionata
+
+# goes_api is free software: you can redistribute it and/or modify it under the
+# terms of the GNU General Public License as published by the Free Software
+# Foundation, either version 3 of the License, or (at your option) any later
+# version.
+#
+# goes_api is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
+# A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along with
+# goes_api. If not, see <http://www.gnu.org/licenses/>.
+"""Define functions to retrieve ABI pixel scan time."""
+
 import os
 import datetime
 import numpy as np 
 import xarray as xr 
-from goes_api.io import (
+from goes_api.checks import (
     _check_satellite,
     _check_scan_mode,
-    _check_sector
+    _check_sector,
 )
 from goes_api.abi_utils import (
-    get_scan_mode_from_attrs,
     get_sector_from_attrs,
+    get_scan_mode_from_attrs,
     get_resolution_from_attrs,
 )
     
@@ -63,7 +74,8 @@ def _get_LUT_filepath(satellite, scan_mode):
     # Define LUT fpath 
     fpath = os.path.join(package_dir, "data", "ABI-Time_Model_LUTS", fname)
     return fpath     
-        
+
+
 def _get_native_pixel_time_offset(satellite, scan_mode, resolution, sector):
     # Check inputs 
     satellite = _check_satellite(satellite)
@@ -106,6 +118,7 @@ def _get_native_pixel_time_offset(satellite, scan_mode, resolution, sector):
     da.attrs = {}
     # Return pixel offset 
     return da 
+
 
 def get_pixel_time_offset(satellite, sector, scan_mode, resolution):
     # Check inputs 
@@ -218,6 +231,7 @@ def get_ABI_pixel_time(data):
     # Return pixel_time DataArray
     return pixel_time
     
+
 #------------------------------------------------------------------------------.
 # from goes_api.abi_pixel_time import _get_native_pixel_time_offset
 # satellite = "G16"

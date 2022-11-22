@@ -17,7 +17,7 @@
 
 import os
 import webbrowser
-from .io import (
+from goes_api.checks import (
     _check_satellite,
     _check_channel,
     _check_product,
@@ -56,7 +56,7 @@ def open_directory_explorer(satellite, protocol=None, base_dir=None):
         )
 
 
-def open_ABI_channel_guide(channel):
+def open_abi_channel_guide(channel):
     """Open ABI QuickGuide of the channel.
 
     See `goes_api.available_channels()` for available ABI channels.
@@ -73,7 +73,7 @@ def open_ABI_channel_guide(channel):
     return None
 
 
-def open_ABI_L2_product_guide(product):
+def open_abi_product_guide(product):
     """Open ABI QuickGuide of L2 products.
 
     See `goes_api.available_product(sensors="ABI", product_level="L2")` for available ABI L2 products.

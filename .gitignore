@@ -8,7 +8,6 @@ test*
 
 # Folders
 /dask-worker-space/
-/dev
 /data/ABI-Time_Model_LUTS
 
 # Byte-compiled / optimized / DLL files

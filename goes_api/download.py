@@ -14,27 +14,27 @@
 #
 # You should have received a copy of the GNU General Public License along with
 # goes_api. If not, see <http://www.gnu.org/licenses/>.
+"""Define download functions."""
 
 import os
 import time
+import datetime
 import numpy as np
+import pandas as pd
 import concurrent.futures
 from concurrent.futures import ThreadPoolExecutor
 from tqdm import tqdm
-
-from .utils.time import get_list_daily_time_blocks
-from .io import (
-    get_filesystem,
-    remove_bucket_address,
+from .io import get_filesystem
+from .info import group_files
+from .checks import _check_satellite, _check_base_dir
+from .search import (
     find_files,
     find_closest_start_time,
     find_latest_start_time,
-    group_files,
     find_previous_files,
     find_next_files,
-    _check_satellite,
-    _check_base_dir,
 )
+
 
 ####--------------------------------------------------------------------------.
 
@@ -108,11 +108,18 @@ def _select_missing_fpaths(local_fpaths, bucket_fpaths):
     return local_fpaths, bucket_fpaths
 
 
+def _remove_bucket_address(fpath):
+    """Remove the bucket acronym (i.e. s3://, gcs://) from the file path."""
+    fel = fpath.split("/")[3:]
+    fpath = os.path.join(*fel)
+    return fpath
+
+
 def _get_local_from_bucket_fpaths(base_dir, satellite, bucket_fpaths):
     """Convert cloud bucket filepaths to local storage filepaths."""
     satellite = satellite.upper()
     fpaths = [
-        os.path.join(base_dir, satellite, remove_bucket_address(fpath))
+        os.path.join(base_dir, satellite, _remove_bucket_address(fpath))
         for fpath in bucket_fpaths
     ]
     return fpaths
@@ -165,6 +172,39 @@ def _fs_get_parallel(bucket_fpaths, local_fpaths, fs, n_threads=10, progress_bar
     ##------------------------------------------------------------------------.
     # Return list of bucket fpaths raising errors
     return l_file_error
+
+
+def _get_end_of_day(time):
+    """Get datetime end of the day."""
+    time_end_of_day = time + datetime.timedelta(days=1)
+    time_end_of_day = time_end_of_day.replace(hour=0, minute=0, second=0)
+    return time_end_of_day
+
+
+def _get_start_of_day(time):
+    """Get datetime start of the day."""
+    time_start_of_day = time
+    time_start_of_day = time_start_of_day.replace(hour=0, minute=0, second=0)
+    return time_start_of_day
+
+
+def _get_list_daily_time_blocks(start_time, end_time):
+    """Return a list of (start_time, end_time) tuple of daily length."""
+    # Retrieve timedelta between start_time and end_time
+    dt = end_time - start_time
+    # If less than a day
+    if dt.days == 0:
+        return [(start_time, end_time)]
+    # Otherwise split into daily blocks (first and last can be shorter)
+    end_of_start_time = _get_end_of_day(start_time)
+    start_of_end_time = _get_start_of_day(end_time)
+    # Define list of daily blocks
+    l_steps = pd.date_range(end_of_start_time, start_of_end_time, freq="1D")
+    l_steps = l_steps.to_pydatetime().tolist()
+    l_steps.insert(0, start_time)
+    l_steps.append(end_time)
+    l_daily_blocks = [(l_steps[i], l_steps[i + 1]) for i in range(0, len(l_steps) - 1)]
+    return l_daily_blocks
 
 
 ####---------------------------------------------------------------------------.
@@ -257,7 +297,7 @@ def download_files(
     fs = get_filesystem(protocol=protocol, fs_args=fs_args)
 
     # Define list of daily time blocks (start_time, end_time)
-    time_blocks = get_list_daily_time_blocks(start_time, end_time)
+    time_blocks = _get_list_daily_time_blocks(start_time, end_time)
 
     if verbose:
         print("-------------------------------------------------------------------- ")

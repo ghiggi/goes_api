@@ -14,6 +14,8 @@
 #
 # You should have received a copy of the GNU General Public License along with
 # goes_api. If not, see <http://www.gnu.org/licenses/>.
+"""Define functions generating kerchunk reference JSON files."""
+
 import os
 import time
 import dask
@@ -22,14 +24,11 @@ import fsspec
 import concurrent.futures
 from tqdm import tqdm
 from kerchunk.hdf import SingleHdf5ToZarr 
-from concurrent.futures import ProcessPoolExecutor, ThreadPoolExecutor
+from concurrent.futures import ThreadPoolExecutor
 
-from .utils.time import get_list_daily_time_blocks
-from .io import (
-    infer_satellite_from_path,
-    remove_bucket_address,
-    find_files
-)
+from .download import _get_list_daily_time_blocks, _remove_bucket_address
+from .info import infer_satellite_from_path
+from .search import find_files
 
 
 def _generate_reference_json(url, reference_dir, fs_args={}):
@@ -42,7 +41,7 @@ def _generate_reference_json(url, reference_dir, fs_args={}):
     satellite = satellite.upper() # GOES-16/GOES-17
     
     # Define output json fpath 
-    standard_path = remove_bucket_address(url)   
+    standard_path = _remove_bucket_address(url)   
     reference_fpath = os.path.join(reference_dir, satellite, standard_path + ".json")
     
     # Create directory
@@ -132,7 +131,7 @@ def generate_kerchunk_files(
     kerchunk_fs_arg['default_cache_type'] = "none"
     
     # Define list of daily time blocks (start_time, end_time)
-    time_blocks = get_list_daily_time_blocks(start_time, end_time)
+    time_blocks = _get_list_daily_time_blocks(start_time, end_time)
 
     if verbose:
         # Initialize timing

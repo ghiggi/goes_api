@@ -1,10 +1,20 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Created on Tue Apr 26 11:57:01 2022
 
-@author: ghiggi
-"""
+# Copyright (c) 2022 Ghiggi Gionata 
+
+# goes_api is free software: you can redistribute it and/or modify it under the
+# terms of the GNU General Public License as published by the Free Software
+# Foundation, either version 3 of the License, or (at your option) any later
+# version.
+#
+# goes_api is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
+# A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along with
+# goes_api. If not, see <http://www.gnu.org/licenses/>.
+"""Define functions to retrieve ABI informations."""
 
 def get_scan_mode_from_attrs(attrs):
     timeline_id = attrs['timeline_id']
@@ -18,6 +28,7 @@ def get_scan_mode_from_attrs(attrs):
         raise ValueError(f"'timeline_id' attribute not recognized. Value is {timeline_id}.")
     return scan_mode 
 
+
 def get_sector_from_attrs(attrs):
     scene_id = attrs['scene_id']
     if scene_id == "Full Disk":
@@ -29,6 +40,7 @@ def get_sector_from_attrs(attrs):
     else: 
         raise ValueError(f"'scene_id' attribute not recognized. Value is {scene_id}.")
     return sector 
+
 
 def get_resolution_from_attrs(attrs):
     spatial_resolution = attrs['spatial_resolution']
@@ -47,6 +59,7 @@ def get_resolution_from_attrs(attrs):
     else: 
         raise ValueError(f"'spatial_resolution' attribute not recognized. Value is {spatial_resolution}.")
     return resolution 
+
 
 def get_ABI_shape(sector, resolution): 
     resolution = int(resolution) 

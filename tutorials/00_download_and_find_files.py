@@ -1,10 +1,20 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
-"""
-Created on Tue Mar 22 14:59:57 2022
 
-@author: ghiggi
-"""
+# Copyright (c) 2022 Ghiggi Gionata
+
+# goes_api is free software: you can redistribute it and/or modify it under the
+# terms of the GNU General Public License as published by the Free Software
+# Foundation, either version 3 of the License, or (at your option) any later
+# version.
+#
+# goes_api is distributed in the hope that it will be useful, but WITHOUT ANY
+# WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
+# A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License along with
+# goes_api. If not, see <http://www.gnu.org/licenses/>.
+
 import datetime
 import goes_api
 from goes_api import download_files, find_files, group_files
@@ -26,10 +36,8 @@ goes_api.available_scan_modes()
 goes_api.available_channels()
 
 ## List online GOES-16 netCDF data
-from goes_api.io import get_available_online_product
-
-get_available_online_product(protocol="s3", satellite="goes-16")
-get_available_online_product(protocol="gcs", satellite="goes-16")
+goes_api.get_available_online_product(protocol="s3", satellite="goes-16")
+goes_api.get_available_online_product(protocol="gcs", satellite="goes-16")
 
 ###---------------------------------------------------------------------------.
 #### Define protocol and local directory
