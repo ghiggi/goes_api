@@ -5,6 +5,7 @@ GOES-16 (GOES-R)
 - November 30 - December 11 2017: Drifting from 89.5 °W to the GOES-East operational location (75.2° W)   [todo: check if 89.5 is correct]
 - Nominal operation resumed on December 18, 2017
 - Declared GOES-EAST on December 18, 2017
+- Biased IR bands before June 19, 2018 
 
 GOES-13
 - Turned off on January 8, 2018 (replaced by GOES-16)
