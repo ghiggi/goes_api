@@ -30,12 +30,19 @@ from goes_api.abi_utils import (
     get_scan_mode_from_attrs,
     get_resolution_from_attrs,
 )
-    
-def _get_LUT_dict(): 
+
+# TODO: DOWNLOAD GOES-API LUTS USING POOCH 
+
+#################################
+#### GOES-API LUT GENERATION ####
+#################################
+
+def _get_lut_dict():
+    """Get GOES ABI scan time offset LUT dictionary."""
     LUT_dict = {
        # G17 
        "Mode6M": "340_Timeline_05M_Mode6_v2.7.nc",                # G17 (Mode6M)
-       "Mode6I": "ABI-Timeline03I_Mode6_Cooling_hybrid.nc",    # G17 cooling (equal to G17 Mode6M for Full Disc, but no CONUS)
+       "Mode6I": "ABI-Timeline03I_Mode6_Cooling_hybrid.nc",       # G17 cooling (equal to G17 Mode6M for Full Disc, but no CONUS)
        "Mode3G": "ABI-Timeline03G_Mode3_Cooling_ShortStars.nc",   # G17 cooling (Mode 3G)
 
        # G16
@@ -46,9 +53,10 @@ def _get_LUT_dict():
       }
     return LUT_dict
 
-def _get_LUT_filepath(satellite, scan_mode): 
+def _get_lut_filepath(satellite, scan_mode):
+    """Get GOES ABI scan time offset LUT filepath."""
     # Get LUT filename
-    LUT_dict = _get_LUT_dict() 
+    LUT_dict = _get_lut_dict() 
     if satellite == "goes-16":
         if scan_mode == "M6": 
             fname = LUT_dict['Mode6A']
@@ -77,6 +85,7 @@ def _get_LUT_filepath(satellite, scan_mode):
 
 
 def _get_native_pixel_time_offset(satellite, scan_mode, resolution, sector):
+    """Get GOES ABI pixel time offset DataArray."""
     # Check inputs 
     satellite = _check_satellite(satellite)
     scan_mode = _check_scan_mode(scan_mode)
@@ -86,7 +95,7 @@ def _get_native_pixel_time_offset(satellite, scan_mode, resolution, sector):
         raise ValueError("Valid nadir 'resolution' are '500','1000' and '2000' m.")
     
     # Open LUT pixel offset 
-    fpath = _get_LUT_filepath(satellite, scan_mode)
+    fpath = _get_lut_filepath(satellite, scan_mode)
     ds = xr.open_dataset(fpath)
     
     # Retrieve sector pixel offset 
@@ -117,33 +126,50 @@ def _get_native_pixel_time_offset(satellite, scan_mode, resolution, sector):
     # Remove attributes
     da.attrs = {}
     # Return pixel offset 
-    return da 
+    return da
 
 
-def get_pixel_time_offset(satellite, sector, scan_mode, resolution):
-    # Check inputs 
-    satellite = _check_satellite(satellite)
-    scan_mode = _check_scan_mode(scan_mode)
-    sector = _check_sector(sector, sensor='ABI')
-    resolution = str(resolution)
-    
+####--------------------------------------------------------------------------.
+######################
+#### GOES-API LUT ####
+######################
+# Saving the 1km LUT as timedelta takes 898 MBs (and <0s to read)
+# Saving the 1km LUT as uint takes 1.7 MBs (but about 6s to read)
+
+
+def get_lut_filepath(satellite, sector, scan_mode, resolution):
+    """Get GOES ABI pixel time offset LUT filepath."""
     # Retrieve package fpath 
     package_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     
     # Define LUT fpath 
+    satellite = satellite.lower()
+    resolution = str(resolution)
     fname = "_".join([satellite, sector, scan_mode, resolution]) + ".nc"
     fpath = os.path.join(package_dir, "data", "ABI_Pixel_TimeOffset", fname)
+    return fpath
     
+def get_pixel_time_offset(satellite, sector, scan_mode, resolution):
+    """Get GOES ABI pixel time offset DataArray."""
+    # Check inputs 
+    satellite = _check_satellite(satellite)
+    scan_mode = _check_scan_mode(scan_mode)
+    sector = _check_sector(sector, sensor='ABI')
+    
+    # Retrieve LUT fpath
+    fpath = get_lut_filepath(satellite, sector, scan_mode, resolution)
+ 
     # Open file 
-    ds = xr.open_dataset(fpath) # TODO: daskify 
+    ds = xr.open_dataset(fpath)  # < 0s
     var = list(ds.data_vars)[0]
-    da = ds[var].astype('m8[s]')
+    da = ds[var].astype('m8[s]') # THIS CONVERSION TAKES ABOUT 6 SECONDS !!!
     da.name = "ABI_pixel_time_offset"
     # Return data
     return da
 
 
-def get_ABI_pixel_time(data):
+def get_abi_pixel_time(data):
+    """Get GOES ABI pixel scan time DataArray."""
     if not isinstance(data, (xr.Dataset, xr.DataArray)): 
         raise TypeError("Provide xr.Dataset or (satpy scene) xr.DataArray.")
     
@@ -178,7 +204,7 @@ def get_ABI_pixel_time(data):
             sector = attrs['scene_abbr'][0]
             resolution = attrs['resolution']
             start_time = attrs['start_time']  
-            end_time = attrs['end_time']  
+            # end_time = attrs['end_time']  
         except:
             raise TypeError("The provided xr.DataArray must be extracted by "
                             "a satpy scene object using scn['<channel>'].")
@@ -190,7 +216,7 @@ def get_ABI_pixel_time(data):
           sector = get_sector_from_attrs(attrs)
           resolution = get_resolution_from_attrs(attrs)
           start_time = datetime.datetime.fromisoformat(attrs['time_coverage_start'][:-3])
-          end_time = datetime.datetime.fromisoformat(attrs['time_coverage_end'][:-3])
+          # end_time = datetime.datetime.fromisoformat(attrs['time_coverage_end'][:-3])
           # # Extract first variable (which should be 'Rad' or the 'L2' product)
           # var = list(data.data_vars)[0]
           # data = data[var]
@@ -224,8 +250,11 @@ def get_ABI_pixel_time(data):
     # Add attributes 
     new_attrs = {k: attrs[k] for k in attrs_keys if attrs.get(k, None) is not None}
     new_attrs['long_name'] = "ABI Pixel Scan Time"
-    new_attrs['standard_name'] = "abi_pixel_scan_time"
-    new_attrs['comments'] = "The pixel scan time maximum error is 40 s."
+    new_attrs['standard_name'] = "pixel_scan_time"
+    new_attrs['description'] = "Time of pixel acquisition."
+    new_attrs['comments'] = "Scan time offset look up table derived from https://www.star.nesdis.noaa.gov/GOESCal/goes_tools.php . The pixel scan time maximum error is 40 s (at ABI scan swath edges)."
+    new_attrs['history'] = "Created by ghiggi/goes_api"
+    new_attrs['software'] = "https://github.com/ghiggi/goes_api"
     pixel_time.attrs = new_attrs
     
     # Return pixel_time DataArray
@@ -242,11 +271,23 @@ def get_ABI_pixel_time(data):
  
 # t_i = time.time()
 # da = _get_native_pixel_time_offset(satellite=satellite,
-#                            sector=sector, 
-#                            scan_mode=scan_mode, 
-#                            resolution=resolution)
+#                                    sector=sector, 
+#                                    scan_mode=scan_mode, 
+#                                    resolution=resolution)
 
 # t_f = time.time()
 # t_f-t_i
 
-     
+    
+# da = scn['C01']
+# attrs = da.attrs
+# satellite = attrs['platform_name']
+# scan_mode = attrs['scan_mode']
+# sector = attrs['scene_abbr'][0]
+# resolution = attrs['resolution']
+# start_time = attrs['start_time']  
+# end_time = attrs['end_time']  
+ 
+# from goes_api.abi_pixel_time import get_lut_filepath, get_pixel_time_offset
+# fpath = get_lut_filepath(satellite, sector, scan_mode, resolution)
+# ds = get_pixel_time_offset(satellite, sector, scan_mode, resolution)

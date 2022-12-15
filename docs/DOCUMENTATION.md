@@ -18,6 +18,7 @@ GOES-17 (GOES-S)
 
 GOES-18 Transition
 - https://www.ospo.noaa.gov/Operations/GOES/transition.html 
+- https://www.goes-r.gov/users/transitionToOperations18.html
 
 GOES ReBroadcast (GRB) 
 
@@ -29,12 +30,13 @@ ABI intro
 ABI bands and composites 
 - http://cimss.ssec.wisc.edu/goes/GOESR_QuickGuides.html
 - https://rammb.cira.colostate.edu/training/visit/quick_guides/
-- https://www.ssec.wisc.edu/~scottl/SHyMet/
 
 Training material 
 - https://rammb2.cira.colostate.edu/training/visit/training_sessions/ 
+- https://www.ssec.wisc.edu/~scottl/SHyMet/
 
 Status
+- https://qcweb.ssec.wisc.edu/web/abi_quality_scores/
 - https://www.ospo.noaa.gov/Operations/GOES/status.html
 - http://cimss.ssec.wisc.edu/goes-r/abi-/band_statistics_imagery.html 
 - https://www.goes-r.gov/users/GOES-17-ABI-Performance.html 
@@ -63,8 +65,20 @@ Imagery
 - GOES Image Viewer: https://www.star.nesdis.noaa.gov/GOES/index.php
 - Static and Time-Difference Imagery: http://cimss.ssec.wisc.edu/goes-r/abi-/static_and_timediff_imagery.html 
 
+Blogs & Videos 
+- https://satlib.cira.colostate.edu/
+- https://rammb.cira.colostate.edu/ramsdis/online/loop_of_the_day/
+
 Other infos 
 - http://cimss.ssec.wisc.edu/goes/goesdata.html 
+
+GOES Satellites 
+- https://spaceflight101.com/goes-r/goes-r-instruments/
+
+GOES Special Events 
+- Keep out Zones: https://cimss.ssec.wisc.edu/satellite-blog/archives/27662
+
+
 
 ## GOES L1B ABI FILE SIZE STATISTICS 
 
@@ -125,6 +139,8 @@ To pack: packed_value = (unpacked_value - add_offset) / scale_factor
 ## ABI Data quality flags (DQFs)
 - Quality scores: https://qcweb.ssec.wisc.edu/web/abi_quality_scores/
 
+## ABI Cloud products 
+- https://www.star.nesdis.noaa.gov/goesr/product_cp_cloud.php 
 
 ## Cloud Bucket Products 
 - AWS: - https://docs.opendata.aws/noaa-goes16/cics-readme.html
@@ -137,6 +153,9 @@ To pack: packed_value = (unpacked_value - add_offset) / scale_factor
 - [goesmirror](https://github.com/meteoswiss-mdr/goesmirror/blob/master/goesmirror/goesmirror.py)
 - [goes-py](https://github.com/palexandremello/goes-py)
 - [GOES](https://github.com/joaohenry23/GOES)
+
+# Orthorectifying 
+https://github.com/spestana/goes-ortho
 
 ## GOES Products & Useful links
 https://www.goes-r.gov/products/overview.html

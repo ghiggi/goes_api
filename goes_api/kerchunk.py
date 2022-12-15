@@ -23,7 +23,6 @@ import ujson
 import fsspec
 import concurrent.futures
 from tqdm import tqdm
-from kerchunk.hdf import SingleHdf5ToZarr 
 from concurrent.futures import ThreadPoolExecutor
 
 from .download import _get_list_daily_time_blocks, _remove_bucket_address
@@ -36,6 +35,8 @@ def _generate_reference_json(url, reference_dir, fs_args={}):
     
     The file is saved at <reference_dir>/<satellite>/.../*.nc.json
     """
+    # TODO: TRY CATCH KERCHUNK 
+    from kerchunk.hdf import SingleHdf5ToZarr 
     # Retrieve satellite
     satellite = infer_satellite_from_path(url)
     satellite = satellite.upper() # GOES-16/GOES-17

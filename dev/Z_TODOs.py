@@ -9,6 +9,9 @@ Created on Tue Mar  1 16:33:44 2022
 # Post performance benchmark
 # Correct cgentlemann, file and chunked and very small !!!
 
+# Add Jupyter Notebook Tutorials 
+# --> Style: https://jhbravo.gitlab.io/geostationary-images/
+
 # Add
 # - https://github.com/pytroll/satpy/issues/1062
 # - https://github.com/pytroll/satpy/pull/1423

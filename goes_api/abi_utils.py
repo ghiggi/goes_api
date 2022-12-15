@@ -16,6 +16,7 @@
 # goes_api. If not, see <http://www.gnu.org/licenses/>.
 """Define functions to retrieve ABI informations."""
 
+
 def get_scan_mode_from_attrs(attrs):
     timeline_id = attrs['timeline_id']
     if timeline_id == "ABI Mode 3":
@@ -61,7 +62,7 @@ def get_resolution_from_attrs(attrs):
     return resolution 
 
 
-def get_ABI_shape(sector, resolution): 
+def get_abi_shape(sector, resolution): 
     resolution = int(resolution) 
     # Retrieve shape at 500 m 
     if sector == "F": 
