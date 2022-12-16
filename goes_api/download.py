@@ -24,10 +24,10 @@ import pandas as pd
 import concurrent.futures
 from concurrent.futures import ThreadPoolExecutor
 from tqdm import tqdm
-from .io import get_filesystem
-from .info import group_files
-from .checks import _check_satellite, _check_base_dir
-from .search import (
+from goes_api.io import get_filesystem
+from goes_api.info import group_files
+from goes_api.checks import _check_satellite, _check_base_dir
+from goes_api.search import (
     find_files,
     find_closest_start_time,
     find_latest_start_time,

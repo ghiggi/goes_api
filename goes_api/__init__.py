@@ -28,6 +28,7 @@ from goes_api.info import (
     available_group_keys,
     group_files,
     get_available_online_product,
+    ensure_operational_data,
 )
 from goes_api.search import (
     find_closest_start_time,
@@ -78,6 +79,7 @@ __all__ = [
     "find_closest_start_time",
     "find_latest_start_time",
     "group_files",
+    "ensure_operational_data",
     "filter_files",
     "generate_kerchunk_files",
     "open_directory_explorer",

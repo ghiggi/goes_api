@@ -28,6 +28,7 @@ from goes_api.checks import (
 from goes_api.abi_utils import (
     get_sector_from_attrs,
     get_scan_mode_from_attrs,
+    get_resolution_from_str,
     get_resolution_from_attrs,
 )
 
@@ -202,12 +203,13 @@ def get_abi_pixel_time(data):
             satellite = attrs['platform_name']
             scan_mode = attrs['scan_mode']
             sector = attrs['scene_abbr'][0]
-            resolution = attrs['resolution']
+            resolution = get_resolution_from_str(attrs['area'].description)
             start_time = attrs['start_time']  
             # end_time = attrs['end_time']  
         except:
             raise TypeError("The provided xr.DataArray must be extracted by "
                             "a satpy scene object using scn['<channel>'].")
+
     # Else if ABI L1B or L2 product         
     else:   
       try: 

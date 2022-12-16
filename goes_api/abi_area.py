@@ -108,10 +108,10 @@ def get_abi_fixed_grid_area(satellite, sector, resolution):
     return area_def      
 
 
-import cartopy.crs as ccrs
-import matplotlib.pyplot as plt
+# import cartopy.crs as ccrs
+# import matplotlib.pyplot as plt
 
-proj_crs = ccrs.PlateCarree()
-fig, ax = plt.subplots(subplot_kw=dict(projection=proj_crs))
-area = get_abi_fixed_grid_area(satellite="goes-16", sector="F", resolution="2000")
-area.plot()
+# proj_crs = ccrs.PlateCarree()
+# fig, ax = plt.subplots(subplot_kw=dict(projection=proj_crs))
+# area = get_abi_fixed_grid_area(satellite="goes-16", sector="F", resolution="2000")
+# area.plot()

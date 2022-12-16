@@ -291,6 +291,24 @@ def _check_scene_abbr(scene_abbr, sensor=None, sector=None):
     return scene_abbr
 
 
+def _check_system_environment(fpaths, value="OR"):
+    """
+    The GOES system environment defines whether the data in the file 
+    are real-time, test, playback, or simulated data.
+    
+    Possible values: 
+    “OR” = operational system real-time data
+    “OT” = operational system test data
+    “IR” = test system real-time data
+    “IT” = test system test data
+    “IP” = test system playback data
+    “IS” = test system simulated data
+    """
+    valid_values = ["OR", "OT", "IR", "IT", "IP", "IS"]
+    if value not in valid_values:
+        raise ValueError(f"{value} is not a valid GOES system environment. Valid values are {valid_values}.")
+        
+
 def _check_filter_parameters(filter_parameters, sensor, sector):
     """Check filter parameters validity.
 
@@ -346,17 +364,15 @@ def _check_connection_type(connection_type, protocol):
     return connection_type
 
 
-def _check_unique_scan_mode(fpath_dict, sensor, product_level):
+def _check_unique_scan_mode(fpath_dict, sensor):
     """Check files have unique scan_mode validity."""
-    from goes_api.info import _get_key_from_filepaths
+    from goes_api.info import get_key_from_filepaths
     
     # TODO: raise information when it changes
     if sensor == "ABI":
         list_datetime = list(fpath_dict.keys())
         fpaths_examplars = [fpath_dict[tt][0] for tt in list_datetime]
-        list_scan_modes = _get_key_from_filepaths(
-            fpaths_examplars, key="scan_mode", sensor=sensor, product_level=product_level,
-        )
+        list_scan_modes = get_key_from_filepaths(fpaths_examplars, key="scan_mode")
         list_scan_modes = np.unique(list_scan_modes).tolist()
         if len(list_scan_modes) != 1:
             raise ValueError(

@@ -43,24 +43,27 @@ def get_sector_from_attrs(attrs):
     return sector 
 
 
-def get_resolution_from_attrs(attrs):
-    spatial_resolution = attrs['spatial_resolution']
-    if spatial_resolution == "0.5km at nadir":
+def get_resolution_from_str(string): 
+    if string == "0.5km at nadir":
         resolution = "500"
-    elif spatial_resolution == "1km at nadir":
+    elif string == "1km at nadir":
         resolution = "1000"
-    elif spatial_resolution == "2km at nadir":
+    elif string == "2km at nadir":
         resolution = "2000"
-    elif spatial_resolution == "4km at nadir":
+    elif string == "4km at nadir":
         resolution = "4000"
-    elif spatial_resolution == "8km at nadir":
+    elif string == "8km at nadir":
         resolution = "8000"
-    elif spatial_resolution == "10km at nadir":
+    elif string == "10km at nadir":
         resolution = "10000"
     else: 
-        raise ValueError(f"'spatial_resolution' attribute not recognized. Value is {spatial_resolution}.")
+        raise ValueError(f"'resolution' not recognized. Value is {string}.")
     return resolution 
 
+
+def get_resolution_from_attrs(attrs):
+    resolution = attrs['spatial_resolution']
+    return get_resolution_from_str(resolution)
 
 def get_abi_shape(sector, resolution): 
     resolution = int(resolution) 

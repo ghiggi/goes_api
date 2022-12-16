@@ -19,7 +19,7 @@
 import os
 import datetime
 import numpy as np
-from goes_api.info import _group_fpaths_by_key
+from goes_api.info import group_files
 from goes_api.filter import _filter_files
 from goes_api.checks import (
      _check_protocol,
@@ -44,6 +44,7 @@ from goes_api.io import (
     _get_time_dir_tree, 
     _set_connection_type,
 )
+
 
 ####--------------------------------------------------------------------------.
 
@@ -210,7 +211,7 @@ def find_files(
 
     # Group fpaths by key
     if group_by_key:
-        fpaths = _group_fpaths_by_key(fpaths, sensor, product_level, key=group_by_key)
+        fpaths = group_files(fpaths, key=group_by_key)
     # Parse fpaths for connection type
     fpaths = _set_connection_type(
         fpaths, satellite=satellite, protocol=protocol, connection_type=connection_type
@@ -742,7 +743,7 @@ def find_previous_files(
     # Perform consistency checks
     if check_consistency:
         # Check constant scan_mode
-        _check_unique_scan_mode(fpath_dict, sensor, product_level)
+        _check_unique_scan_mode(fpath_dict, sensor)
         # Check for interval regularity
         if not include_start_time: 
             list_datetime = list_datetime + [closest_time]
@@ -900,7 +901,7 @@ def find_next_files(
     # Perform consistency checks
     if check_consistency:
         # Check constant scan_mode
-        _check_unique_scan_mode(fpath_dict, sensor, product_level)
+        _check_unique_scan_mode(fpath_dict, sensor)
         # Check for interval regularity
         if not include_start_time: 
             list_datetime = list_datetime + [closest_time]

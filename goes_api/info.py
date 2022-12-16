@@ -377,15 +377,12 @@ def _separate_product_scene_abbr(product_scene_abbr):
         raise NotImplementedError("Adapat the file patterns.")
 
 
-def _get_info_from_filename(fname, sensor=None, product_level=None):
+def _get_info_from_filename(fname):
     """Retrieve file information dictionary from filename."""
-    # TODO: sensor and product_level can be removed as function arguments
     from goes_api.listing import GLOB_FNAME_PATTERN
-    # Infer sensor and product_level if not provided
-    if sensor is None:
-        sensor = _infer_sensor(fname)
-    if product_level is None: 
-        product_level = _infer_product_level(fname)
+    # Infer sensor and product_level
+    sensor = _infer_sensor(fname)
+    product_level = _infer_product_level(fname)
         
     # Retrieve file pattern
     fpattern = GLOB_FNAME_PATTERN[sensor][product_level]
@@ -441,20 +438,20 @@ def _get_info_from_filename(fname, sensor=None, product_level=None):
     return info_dict
 
 
-def _get_info_from_filepath(fpath, sensor=None, product_level=None):
+def _get_info_from_filepath(fpath):
     """Retrieve file information dictionary from filepath."""
     if not isinstance(fpath, str):
         raise TypeError("'fpath' must be a string.")
     fname = os.path.basename(fpath)
-    return _get_info_from_filename(fname, sensor, product_level)
+    return _get_info_from_filename(fname)
 
 
-def _get_key_from_filepaths(fpaths, key, sensor=None, product_level=None):
+def _get_key_from_filepaths(fpaths, key):
     """Extract specific key information from a list of filepaths."""
     if isinstance(fpaths, str):
         fpaths = [fpaths]
     return [
-        _get_info_from_filepath(fpath, sensor, product_level)[key] for fpath in fpaths
+        _get_info_from_filepath(fpath)[key] for fpath in fpaths
     ]
 
 
@@ -471,12 +468,11 @@ def get_key_from_filepaths(fpaths, key):
 #### Group filepaths 
 
 
-def _group_fpaths_by_key(fpaths, sensor=None, product_level=None, key="start_time"):
+def _group_fpaths_by_key(fpaths, key="start_time"):
     """Utils function to group filepaths by key contained into filename."""
-    # TODO: sensor and product_level args could be removed 
     # - Retrieve key sorting index 
     list_key_values = [
-        _get_info_from_filepath(fpath, sensor, product_level)[key] for fpath in fpaths
+        _get_info_from_filepath(fpath)[key] for fpath in fpaths
     ]
     idx_key_sorting = np.array(list_key_values).argsort()
     # - Sort fpaths and key_values by key values
@@ -517,3 +513,19 @@ def group_files(fpaths, key="start_time"):
     key = _check_group_by_key(key)
     fpaths_dict = _group_fpaths_by_key(fpaths=fpaths, key=key)
     return fpaths_dict
+
+
+####--------------------------------------------------------------------------.
+#### Operational information
+def ensure_operational_data(fpaths):
+    """Check that the GOES files comes from the GOES Operational system Real-time (OR) environment."""
+    # Deal with possible fpaths_dict
+    if isinstance(fpaths, dict):
+        fpaths = list(fpaths.values())
+        fpaths = [item for sublist in fpaths for item in sublist] 
+    # Check list of filepaths
+    list_se = np.array(get_key_from_filepaths(fpaths, "system_environment"), dtype=str)
+    unvalid_idx = np.where(list_se != "OR")[0]
+    if len(unvalid_idx) != 0:
+        unvalid_fpaths = np.array(fpaths)[unvalid_idx] 
+        raise ValueError(f"The required files does not come from the GOES operational system real-time environment. Unvalid files: {unvalid_fpaths}")

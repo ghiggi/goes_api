@@ -41,7 +41,7 @@ goes_api.get_available_online_product(protocol="gcs", satellite="goes-16")
 
 ###---------------------------------------------------------------------------.
 #### Define protocol and local directory
-base_dir = "/tmp/"
+base_dir = "/ltenas8/data/GEO"
 
 protocol = "gcs"
 protocol = "s3"
@@ -51,37 +51,25 @@ fs_args = {}
 #### Define satellite, sensor, product_level and product
 satellite = "GOES-16"
 sensor = "ABI"
-product_level = "L1B"
-product = "Rad"
+product_level = "L2"
+product = "COD"
 
 ###---------------------------------------------------------------------------.
 #### Define sector and filtering options
-start_time = datetime.datetime(2019, 11, 17, 11, 30)
-end_time = datetime.datetime(2019, 11, 17, 11, 40)
+start_time = datetime.datetime(2020, 7, 7, 0, 0)
+end_time = datetime.datetime(2020, 7, 8, 0, 0)
 
 # - Full Disc Example
 sector = "F"
 scene_abbr = None  # DO NOT SPECIFY FOR FULL DISC SECTOR
 scan_modes = None  # select all scan modes (M3, M4, M6)
 channels = None  # select all channels
-channels = ["C01"]  # select channels subset
 filter_parameters = {}
 filter_parameters["scan_modes"] = scan_modes
 filter_parameters["channels"] = channels
 filter_parameters["scene_abbr"] = scene_abbr
 
-# - Mesoscale Example
-sector = "M"
-scene_abbr = ["M1"]  # None download and find both locations
-scan_modes = None  # select all scan modes (M3, M4, M6)
-channels = None  # select all channels
-channels = ["C01"]  # select channels subset
-filter_parameters = {}
-filter_parameters["scan_modes"] = scan_modes
-filter_parameters["channels"] = channels
-filter_parameters["scene_abbr"] = scene_abbr
-
-###---------------------------------------------------------------------------.
+####---------------------------------------------------------------------------.
 #### Download files
 n_threads = 20  # n_parallel downloads
 force_download = False  # whether to overwrite existing data on disk
