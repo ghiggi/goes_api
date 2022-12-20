@@ -44,7 +44,11 @@ from goes_api.io import (
     _get_time_dir_tree, 
     _set_connection_type,
 )
-
+from goes_api.operations import (
+    ensure_operational_data,
+    ensure_data_availability,
+    ensure_regular_timesteps,
+)
 
 ####--------------------------------------------------------------------------.
 
@@ -62,6 +66,36 @@ def _get_acquisition_max_timedelta(sector):
     return dt
 
 
+def _enable_multiple_products(func): 
+    """Decorator to retrieve filepaths for multiple products."""
+    def decorator(*args, **kwargs):
+        # Single product case
+        if isinstance(kwargs['product'], str):
+            fpaths = func(*args, **kwargs)
+            return fpaths
+
+        # Multiproduct case
+        elif isinstance(kwargs['product'], list): 
+            products = kwargs['product']
+            group_by_key = kwargs['group_by_key']
+            list_fpaths = []
+            for product in products:
+                new_kwargs = kwargs.copy()
+                new_kwargs['product'] = product
+                new_kwargs['group_by_key'] = None
+                fpaths = func(*args, **new_kwargs)
+                list_fpaths.append(fpaths)
+            # Flat the list 
+            fpaths = [item for sublist in list_fpaths for item in sublist]   
+            if group_by_key is not None:
+               fpaths = group_files(fpaths, key=group_by_key)
+            return fpaths
+        else: 
+            raise ValueError("Expecting 'product' to be a string or a list.")
+    return decorator
+
+
+@_enable_multiple_products
 def find_files(
     satellite,
     sensor,
@@ -77,6 +111,7 @@ def find_files(
     protocol=None,
     fs_args={},
     verbose=False,
+    operational_checks=True, 
 ):
     """
     Retrieve files from local or cloud bucket storage.
@@ -135,7 +170,6 @@ def find_files(
         The default is False.
 
     """
-
     # Check inputs
     if protocol is None and base_dir is None:
         raise ValueError("Specify 1 between `base_dir` and `protocol`")
@@ -208,10 +242,20 @@ def find_files(
         list_fpaths += fpaths
 
     fpaths = list_fpaths
-
+    
+    # Perform checks for operational routines
+    if operational_checks:
+        # - Ensure that the file comes from the GOES Operational system Real-time (OR) environment
+        ensure_operational_data(fpaths)
+        # - Ensure data availability
+        ensure_data_availability(fpaths, sensor=sensor, product=product, start_time=start_time, end_time=end_time)
+        # - Ensure regular timesteps 
+        ensure_regular_timesteps(fpaths, timedelta=None)
+    
     # Group fpaths by key
     if group_by_key:
         fpaths = group_files(fpaths, key=group_by_key)
+   
     # Parse fpaths for connection type
     fpaths = _set_connection_type(
         fpaths, satellite=satellite, protocol=protocol, connection_type=connection_type

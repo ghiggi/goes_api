@@ -514,18 +514,3 @@ def group_files(fpaths, key="start_time"):
     fpaths_dict = _group_fpaths_by_key(fpaths=fpaths, key=key)
     return fpaths_dict
 
-
-####--------------------------------------------------------------------------.
-#### Operational information
-def ensure_operational_data(fpaths):
-    """Check that the GOES files comes from the GOES Operational system Real-time (OR) environment."""
-    # Deal with possible fpaths_dict
-    if isinstance(fpaths, dict):
-        fpaths = list(fpaths.values())
-        fpaths = [item for sublist in fpaths for item in sublist] 
-    # Check list of filepaths
-    list_se = np.array(get_key_from_filepaths(fpaths, "system_environment"), dtype=str)
-    unvalid_idx = np.where(list_se != "OR")[0]
-    if len(unvalid_idx) != 0:
-        unvalid_fpaths = np.array(fpaths)[unvalid_idx] 
-        raise ValueError(f"The required files does not come from the GOES operational system real-time environment. Unvalid files: {unvalid_fpaths}")
