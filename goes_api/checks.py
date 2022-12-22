@@ -34,6 +34,12 @@ def _check_protocol(protocol):
     return protocol
 
 
+def _check_download_protocol(protocol):
+    """ "Check protocol validity for download."""
+    if protocol not in ["gcs", "s3"]:
+        raise ValueError("Please specify either 'gcs' or 's3' protocol for download.")
+
+
 def _check_base_dir(base_dir):
     """Check base_dir validity."""
     if base_dir is not None:
@@ -206,6 +212,31 @@ def _check_start_end_time(start_time, end_time):
         raise ValueError("Provide a end_time occuring in the past.")
     return (start_time, end_time)
 
+
+def _check_year_month(year, month):
+    """Check year month validity."""
+    # TODO: check before current date and after xxx for specific satellites
+    _check_month(month)
+    _check_year(year) 
+    return year, month 
+ 
+    
+def _check_month(month):
+    """Check month value."""
+    if not isinstance(month, int):
+        raise TypeError("'month' must be provided as an integer.")
+    if month < 1 or month > 12: 
+        raise ValueError("'month' value must be between 1 and 12.")
+
+
+def _check_year(year):
+    """Check year value."""
+    if not isinstance(year, int):
+        raise TypeError("'year' must be provided as an integer.")
+    current_year = datetime.datetime.now().year 
+    if year > current_year:
+        raise ValueError("'year' must not exceed current year.")
+        
 
 def _check_channel(channel):
     """Check channel validity."""

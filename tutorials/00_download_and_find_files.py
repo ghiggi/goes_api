@@ -51,8 +51,8 @@ fs_args = {}
 #### Define satellite, sensor, product_level and product
 satellite = "GOES-16"
 sensor = "ABI"
-product_level = "L2"
-product = "COD"
+product_level = "L1b"
+product = "Rad"
 
 ###---------------------------------------------------------------------------.
 #### Define sector and filtering options
@@ -63,7 +63,7 @@ end_time = datetime.datetime(2020, 7, 8, 0, 0)
 sector = "F"
 scene_abbr = None  # DO NOT SPECIFY FOR FULL DISC SECTOR
 scan_modes = None  # select all scan modes (M3, M4, M6)
-channels = None  # select all channels
+channels = None    # select all channels
 filter_parameters = {}
 filter_parameters["scan_modes"] = scan_modes
 filter_parameters["channels"] = channels
