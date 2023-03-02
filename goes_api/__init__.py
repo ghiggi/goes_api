@@ -50,6 +50,7 @@ from goes_api.download import (
     download_latest_files,
     download_next_files,
     download_previous_files,
+    download_daily_files,
     download_monthly_files,
 )
 from goes_api.explore import (
@@ -77,6 +78,7 @@ __all__ = [
     "download_latest_files",
     "download_next_files",
     "download_previous_files",
+    "download_daily_files",
     "download_monthly_files",
     "find_files",
     "find_latest_files",
