@@ -191,7 +191,20 @@ def _check_time(time):
             time = datetime.datetime.fromisoformat(time)
         except ValueError:
             raise ValueError("The time string must have format 'YYYY-MM-DD hh:mm:ss'")
+            
+    # Set resolution to minutes
+    # TODO: CONSIDER POSSIBLE MESOSCALE AT 30 SECS
+    time = time.replace(microsecond=0, second=0)
     return time
+
+
+def check_date(date):
+    """Check date validity."""
+    if not isinstance(date, (datetime.date, datetime.datetime)):
+        raise ValueError("date must be a datetime object")
+    if isinstance(date, datetime.datetime):
+        date = date.date()
+    return date
 
 
 def _check_start_end_time(start_time, end_time):
@@ -199,9 +212,6 @@ def _check_start_end_time(start_time, end_time):
     # Format input
     start_time = _check_time(start_time)
     end_time = _check_time(end_time)
-    # Set resolution to minutes (TODO: CONSIDER POSSIBLE MESOSCALE AT 30 SECS)
-    start_time = start_time.replace(microsecond=0, second=0)
-    end_time = end_time.replace(microsecond=0, second=0)
     # Check start_time and end_time are chronological
     if start_time > end_time:
         raise ValueError("Provide start_time occuring before of end_time")
