@@ -30,7 +30,9 @@ from goes_api.checks import (
     _check_satellite,
     _check_base_dir, 
     _check_download_protocol,
-    _check_year_month
+    _check_year_month,
+    _check_time,
+    check_date,
 )
 from goes_api.search import (
     find_files,
@@ -290,10 +292,12 @@ def download_files(
     _check_download_protocol(protocol)
     base_dir = _check_base_dir(base_dir)
     satellite = _check_satellite(satellite)
-
+    start_time = _check_time(start_time)
+    end_time = _check_time(end_time)
+    
     # Initialize timing
     t_i = time.time()
-
+        
     # -------------------------------------------------------------------------.
     # Get filesystem
     fs = get_filesystem(protocol=protocol, fs_args=fs_args)
@@ -985,6 +989,97 @@ def download_monthly_files(base_dir,
     year, month = _check_year_month(year, month)
     start_time = datetime.datetime(year, month, 1, 0, 0, 0)
     end_time = start_time + relativedelta(months=1)
+    list_all_local_fpaths = download_files(
+        base_dir=base_dir,
+        protocol=protocol, 
+        satellite=satellite, 
+        sensor=sensor,
+        product_level=product_level,
+        product=product,
+        sector=sector, 
+        start_time=start_time,
+        end_time=end_time,
+        n_threads=n_threads,
+        force_download=force_download,
+        check_data_integrity=check_data_integrity,
+        progress_bar=progress_bar,
+        verbose=verbose,
+        filter_parameters=filter_parameters,
+        fs_args=fs_args,
+    )
+    return list_all_local_fpaths
+
+
+def download_daily_files(base_dir,
+                        protocol,
+                        satellite,
+                        sensor,
+                        product_level,
+                        product,
+                        sector,
+                        date, 
+                        n_threads=20,
+                        force_download=False,
+                        check_data_integrity=True,
+                        progress_bar=True,
+                        verbose=True,
+                        filter_parameters={},
+                        fs_args={},
+                        ): 
+    """
+    Donwload daily files from a cloud bucket storage.
+
+    Parameters
+    ----------
+    base_dir : str
+        Base directory path where the <GOES-**>/<product>/... directory structure
+        should be created.
+    protocol : str
+        String specifying the cloud bucket storage from which to retrieve
+        the data.
+        Use `goes_api.available_protocols()` to retrieve available protocols.
+    satellite : str
+        The name of the satellite.
+        Use `goes_api.available_satellites()` to retrieve the available satellites.
+    sensor : str
+        Satellite sensor.
+        See `goes_api.available_sensors()` for available sensors.
+    product_level : str
+        Product level.
+        See `goes_api.available_product_levels()` for available product levels.
+    product : str
+        The name of the product to retrieve.
+        See `goes_api.available_products()` for a list of available products.
+        sector : str
+    sector:
+        The acronym of the ABI sector for which to retrieve the files.
+        See `goes_api.available_sectors()` for a list of available sectors.
+    date : datetime.date
+        Date for which to download the data 
+    n_threads: int
+        Number of files to be downloaded concurrently.
+        The default is 20. The max value is set automatically to 50.    
+    force_download: bool
+        If True, it downloads and overwrites the files already existing on local storage.
+        If False, it does not downloads files already existing on local storage.
+        The default is False.
+    check_data_integrity: bool
+        If True, it checks that the downloaded files are not corrupted.
+        Corruption is assessed by comparing file size between local and cloud bucket storage.
+        The default is True.
+    progress_bar: bool
+        If True, it displays a progress bar showing the download status.
+        The default is True.
+    verbose : bool, optional
+        If True, it print some information concerning the download process.
+        The default is False.
+
+    """
+    # -------------------------------------------------------------------------.
+    # Checks
+    from dateutil.relativedelta import relativedelta
+    start_time = check_date(date) 
+    end_time = start_time + relativedelta(days=1)
     list_all_local_fpaths = download_files(
         base_dir=base_dir,
         protocol=protocol, 
