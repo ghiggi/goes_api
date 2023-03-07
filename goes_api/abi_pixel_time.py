@@ -180,7 +180,7 @@ def get_abi_pixel_time(data):
                   'area',
                   'resolution', 
                   'grid_mapping', 
-                  'cell_methods',
+                  # 'cell_methods',
                   'platform_name',
                   'platform_shortname',
                   'orbital_slot',
