@@ -46,15 +46,15 @@ def get_sector_from_attrs(attrs):
 def get_resolution_from_str(string): 
     if string == "0.5km at nadir":
         resolution = "500"
-    elif string == "1km at nadir":
+    elif string == "1km at nadir" or string == "1.0km at nadir":
         resolution = "1000"
-    elif string == "2km at nadir":
+    elif string == "2km at nadir" or string == "2.0km at nadir":
         resolution = "2000"
-    elif string == "4km at nadir":
+    elif string == "4km at nadir" or string == "4.0km at nadir":
         resolution = "4000"
-    elif string == "8km at nadir":
+    elif string == "8km at nadir" or string == "8.0km at nadir":
         resolution = "8000"
-    elif string == "10km at nadir":
+    elif string == "10km at nadir" or string == "10.0km at nadir":
         resolution = "10000"
     else: 
         raise ValueError(f"'resolution' not recognized. Value is {string}.")
