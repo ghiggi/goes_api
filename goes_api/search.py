@@ -168,7 +168,11 @@ def find_files(
     verbose : bool, optional
         If True, it print some information concerning the file search.
         The default is False.
-
+    operational_checks: bool, optional 
+        If True, it checks that :
+        1. the file comes from the GOES Operational system Real-time (OR) environment
+        2. there are some files available 
+        3. The acquisitions are regular in time
     """
     # Check inputs
     if protocol is None and base_dir is None:

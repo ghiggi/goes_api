@@ -41,7 +41,7 @@ from goes_api.search import (
     find_previous_files,
     find_next_files,
 )
-
+from goes_api.utils.timing import print_elapsed_time
 
 ####--------------------------------------------------------------------------.
 
@@ -211,7 +211,34 @@ def _get_list_daily_time_blocks(start_time, end_time):
     return l_daily_blocks
 
 
+def _enable_multiple_products(func): 
+    """Decorator to retrieve filepaths for multiple products."""
+    def decorator(*args, **kwargs):
+        # Single product case
+        if isinstance(kwargs['product'], str):
+            fpaths = func(*args, **kwargs)
+            return fpaths
+
+        # Multiproduct case
+        elif isinstance(kwargs['product'], list): 
+            products = kwargs['product']
+            list_fpaths = []
+            for product in products:
+                new_kwargs = kwargs.copy()
+                new_kwargs['product'] = product
+                fpaths = func(*args, **new_kwargs)
+                list_fpaths.append(fpaths)
+            # Flat the list 
+            fpaths = [item for sublist in list_fpaths for item in sublist]   
+            return fpaths
+        else: 
+            raise ValueError("Expecting 'product' to be a string or a list.")
+    return decorator
+
+
 ####---------------------------------------------------------------------------.
+@print_elapsed_time
+@_enable_multiple_products
 def download_files(
     base_dir,
     protocol,
@@ -297,7 +324,7 @@ def download_files(
     
     # Initialize timing
     t_i = time.time()
-        
+    
     # -------------------------------------------------------------------------.
     # Get filesystem
     fs = get_filesystem(protocol=protocol, fs_args=fs_args)
@@ -307,7 +334,7 @@ def download_files(
 
     if verbose:
         print("-------------------------------------------------------------------- ")
-        print(f"Starting downloading data between {start_time} and {end_time}.")
+        print(f"Starting downloading {product} data between {start_time} and {end_time}.")
 
     # Loop over daily time blocks (to search for data)
     list_all_local_fpaths = []
@@ -327,6 +354,7 @@ def download_files(
             end_time=end_time,
             filter_parameters=filter_parameters,
             connection_type="bucket",
+            operational_checks=False, 
             base_dir=None,
             group_by_key=None,
             verbose=False,
@@ -411,6 +439,9 @@ def download_files(
 
     # Return list of local fpaths
     return list_all_local_fpaths
+
+
+####---------------------------------------------------------------------------.
 
 
 def download_closest_files(
@@ -1078,6 +1109,7 @@ def download_daily_files(base_dir,
     # -------------------------------------------------------------------------.
     # Checks
     from dateutil.relativedelta import relativedelta
+    
     start_time = check_date(date) 
     end_time = start_time + relativedelta(days=1)
     list_all_local_fpaths = download_files(
