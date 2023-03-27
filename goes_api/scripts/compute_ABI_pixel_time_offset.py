@@ -10,7 +10,7 @@ import xarray as xr
 from goes_api.abi_pixel_time import _get_native_pixel_time_offset
 
 # Set directory 
-dst_dir = "/home/ghiggi/Python_Packages/goes_api/data/ABI_Pixel_TimeOffset"
+dst_dir = "/home/ghiggi/Python_Packages/goes_api/goes_api/data/ABI_Pixel_TimeOffset"
 os.makedirs(dst_dir, exist_ok=True)
 
 #-----------------------------------------------------------------------------.

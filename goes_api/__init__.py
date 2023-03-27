@@ -59,7 +59,6 @@ from goes_api.explore import (
     open_abi_product_guide,
 )
 from goes_api.filter import filter_files
-from goes_api.kerchunk import generate_kerchunk_files
 
 __all__ = [
     "available_protocols",
@@ -97,3 +96,7 @@ __all__ = [
     "open_abi_channel_guide",
     "open_abi_product_guide",
 ]
+	
+
+
+

@@ -1,4 +1,13 @@
 # GOES API - An API to download and query GOES satellite data.
+[![DOI](https://zenodo.org/badge/286664485.svg)](https://zenodo.org/badge/latestdoi/XXXX)
+[![PyPI version](https://badge.fury.io/py/goes_api.svg)](https://badge.fury.io/py/goes_api)
+[![Conda Version](https://img.shields.io/conda/vn/conda-forge/goes_api.svg)](https://anaconda.org/conda-forge/goes_api)
+[![Build Status](https://github.com/ghiggi/goes_api/workflows/Continuous%20Integration/badge.svg?branch=main)](https://github.com/ghiggi/goes_api/actions)
+[![Coverage Status](https://coveralls.io/repos/github/ghiggi/goes_api/badge.svg?branch=main)](https://coveralls.io/github/ghiggi/goes_api?branch=main)
+[![Documentation Status](https://readthedocs.org/projects/goes_api/badge/?version=latest)](https://gpm_api.readthedocs.io/projects/goes_api/en/stable/?badge=stable)
+[![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/ambv/black)
+[![License](https://img.shields.io/github/license/ghiggi/goes_api)](https://github.com/ghiggi/goes_api/blob/master/LICENSE)
+
 
 The code in this repository provides an API to download, query and filter GOES16 and GOES17 satellite data.
 

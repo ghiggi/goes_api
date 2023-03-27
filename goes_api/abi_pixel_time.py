@@ -147,7 +147,7 @@ def get_lut_filepath(satellite, sector, scan_mode, resolution):
     satellite = satellite.lower()
     resolution = str(resolution)
     fname = "_".join([satellite, sector, scan_mode, resolution]) + ".nc"
-    fpath = os.path.join(package_dir, "data", "ABI_Pixel_TimeOffset", fname)
+    fpath = os.path.join(package_dir, "goes_api", "data", "ABI_Pixel_TimeOffset", fname)
     return fpath
     
 def get_pixel_time_offset(satellite, sector, scan_mode, resolution):

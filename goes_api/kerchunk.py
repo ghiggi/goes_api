@@ -18,8 +18,6 @@
 
 import os
 import time
-import dask
-import ujson
 import fsspec
 import concurrent.futures
 from tqdm import tqdm
@@ -35,8 +33,16 @@ def _generate_reference_json(url, reference_dir, fs_args={}):
     
     The file is saved at <reference_dir>/<satellite>/.../*.nc.json
     """
-    # TODO: TRY CATCH KERCHUNK 
-    from kerchunk.hdf import SingleHdf5ToZarr 
+    # Test require packages are available 
+    try: 
+        import ujson
+    except ModuleNotFoundError: 
+        raise ModuleNotFoundError("Install ujson to exploit kerchunk functionalities !")
+    try: 
+        from kerchunk.hdf import SingleHdf5ToZarr 
+    except ModuleNotFoundError: 
+        raise ModuleNotFoundError("Install kerchunk to exploit goes_api functionalities !")
+        
     # Retrieve satellite
     satellite = infer_satellite_from_path(url)
     satellite = satellite.upper() # GOES-16/GOES-17
@@ -57,6 +63,7 @@ def _generate_reference_json(url, reference_dir, fs_args={}):
             output_f.write(ujson.dumps(file_metadata).encode())
 
     return None
+
 
 def _get_parallel_ref(bucket_fpaths, fs_args, reference_dir, 
                       n_processes=20, progress_bar=True):
@@ -107,6 +114,7 @@ def _get_parallel_ref(bucket_fpaths, fs_args, reference_dir,
     # Return list of bucket fpaths raising errors
     return l_file_error
 
+
 def generate_kerchunk_files(
         satellite,
         sensor,
@@ -123,7 +131,13 @@ def generate_kerchunk_files(
         verbose=False,
         progress_bar=True, 
         ):
-    
+    # Test require packages are available 
+    try: 
+        import dask
+    except ModuleNotFoundError: 
+        raise ModuleNotFoundError("Install dask to run this function !")
+   
+
     # Define fs_args for kerchunking 
     kerchunk_fs_arg = fs_args.copy()
     kerchunk_fs_arg['mode'] = "rb"
@@ -205,6 +219,12 @@ def generate_kerchunk_files(
 
 def get_reference_mappers(fpaths, protocol="s3"):
     """Return list of reference mappers objects."""
+    # Test require packages are available 
+    try: 
+        import ujson
+    except ModuleNotFoundError: 
+        raise ModuleNotFoundError("Install ujson to exploit kerchunk functionalities !")
+        
     m_list = []
     for fpath in tqdm(fpaths):
         # Open reference dict
@@ -215,7 +235,7 @@ def get_reference_mappers(fpaths, protocol="s3"):
         reference_dict = reference_dict.copy()
         # Create FSMap 
         m_list.append(fsspec.get_mapper("reference://", 
-                        fo=reference_dict,
-                        remote_protocol=protocol,
-                        remote_options={'anon':True}))
+                      fo=reference_dict,
+                      remote_protocol=protocol,
+                      remote_options={'anon':True}))
     return m_list
