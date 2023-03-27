@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "goes_api"
-description = "Python API for for I/O of GOES-16/17 satellite data on local and cloud storage."
+description = "Python API for downloading and searching GOES-16/17 satellite data on local and cloud storage."
 readme = "README.md"
 authors = [
 	{ name = "Gionata Ghiggi", email = "gionata.ghiggi@epfl.ch" },
@@ -67,6 +67,7 @@ dev = ["pre-commit", "black", "ruff",
        "pytest", "pytest-cov", 
        "pip-tools", "bumpver", "twine",
        "setuptools>=61.0.0", "wheel",
+       "build", "twine",
        "sphinx", "sphinx-gallery", "nbsphinx"]
 doc = ["sphinx", "sphinx-gallery", "nbsphinx"] # sphinx-rtd-theme numpydoc pandoc
 tests = ["pre-commit", "pytest", "pytest-cov"]
@@ -84,16 +85,6 @@ write_to = "goes_api/_version.py"
 [tool.setuptools]
 license-files = ["LICENSE"]
 packages = ["goes_api"] # explicitly list the packages in modules
-
-# To customize, remove packages and use instead [tool.setuptools.packages.find]
-
-# [tool.setuptools.packages.find]
-# where = ["goes_api"]
-# include = ["io", "..."]
-
-#  [project.scripts]
-#  download_daily_gpm_data="gpm_api.scripts.download_daily_gpm_data:download_daily_gpm_data"
-#  download_monthly_gpm_data="gpm_api.scripts.download_monthly_gpm_data:download_monthly_gpm_data"
 
 [tool.isort]
 profile = "black"
