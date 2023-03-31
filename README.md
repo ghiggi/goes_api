@@ -1,5 +1,5 @@
 # GOES API - An API to download and query GOES satellite data.
-[![DOI](https://zenodo.org/badge/286664485.svg)](https://zenodo.org/badge/latestdoi/XXXX)
+[![DOI](https://zenodo.org/badge/380300525.svg)](https://zenodo.org/badge/latestdoi/380300525)
 [![PyPI version](https://badge.fury.io/py/goes_api.svg)](https://badge.fury.io/py/goes_api)
 [![Conda Version](https://img.shields.io/conda/vn/conda-forge/goes_api.svg)](https://anaconda.org/conda-forge/goes_api)
 [![Build Status](https://github.com/ghiggi/goes_api/workflows/Continuous%20Integration/badge.svg?branch=main)](https://github.com/ghiggi/goes_api/actions)
@@ -7,7 +7,6 @@
 [![Documentation Status](https://readthedocs.org/projects/goes_api/badge/?version=latest)](https://gpm_api.readthedocs.io/projects/goes_api/en/stable/?badge=stable)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/ambv/black)
 [![License](https://img.shields.io/github/license/ghiggi/goes_api)](https://github.com/ghiggi/goes_api/blob/master/LICENSE)
-
 
 The code in this repository provides an API to download, query and filter GOES16 and GOES17 satellite data.
 
@@ -35,29 +34,15 @@ Documentation is available at XXXXX
 
 ## Installation
 
-For a local installation, follow the below instructions.
+### pip
 
-1. Clone this repository.
-   ```sh
-   git clone git@github.com:ghiggi/goes_api.git
-   cd goes_api
-   ```
+GOES-API can be installed via [pip][pip_link] on Linux, Mac, and Windows.
+On Windows you can install [WinPython][winpy_link] to get Python and pip running.
 
-2. Install the dependencies using conda:
-   ```sh
-   conda env create -f environment.yml
-   ```
-   
-3. Activate the goes_api conda environment 
-   ```sh
-   conda activate goes_api
-   ```
+Then, install the GOES-API package by typing the following command in the command terminal:
 
-4. Alternatively install manually the required packages with 
-   ```sh
-   conda install -c conda-forge dask numpy pandas trollsift fsspec s3fs gcsfs kerchunk ujson tqdm
-   ```
- 
+    pip install gpm_api
+
 ## Contributors
 
 * [Gionata Ghiggi](https://people.epfl.ch/gionata.ghiggi)
