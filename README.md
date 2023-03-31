@@ -41,7 +41,7 @@ On Windows you can install [WinPython][winpy_link] to get Python and pip running
 
 Then, install the GOES-API package by typing the following command in the command terminal:
 
-    pip install gpm_api
+    pip install goes_api
 
 ## Contributors
 
