@@ -53,7 +53,7 @@ If you are using GOES-API, please cite:
 
 > Ghiggi Gionata. ghiggi/goes_api. Zenodo. https://doi.org/10.5281/zenodo.7787851
 
-If you want to cite a specific version, have a look at the [Zenodo site](10.5281/zenodo.7787851).
+If you want to cite a specific version, have a look at the [Zenodo site](https://doi.org/10.5281/zenodo.7787851).
 
 ## Contributors
 
