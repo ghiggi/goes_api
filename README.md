@@ -65,3 +65,6 @@ If you want to cite a specific version, have a look at the [Zenodo site](10.5281
 ## License
 
 The content of this repository is released under the terms of the [GNU General Public License v3.0](LICENSE.txt).
+
+[pip_link]: https://pypi.org/project/gstools
+[winpy_link]: https://winpython.github.io/
