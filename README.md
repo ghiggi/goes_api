@@ -1,4 +1,4 @@
-# GOES API - An API to download and query GOES satellite data.
+# Welcome to GOES API - An API to download and search for GOES satellite data.
 [![DOI](https://zenodo.org/badge/380300525.svg)](https://zenodo.org/badge/latestdoi/380300525)
 [![PyPI version](https://badge.fury.io/py/goes_api.svg)](https://badge.fury.io/py/goes_api)
 [![Conda Version](https://img.shields.io/conda/vn/conda-forge/goes_api.svg)](https://anaconda.org/conda-forge/goes_api)
@@ -7,6 +7,10 @@
 [![Documentation Status](https://readthedocs.org/projects/goes_api/badge/?version=latest)](https://gpm_api.readthedocs.io/projects/goes_api/en/stable/?badge=stable)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/ambv/black)
 [![License](https://img.shields.io/github/license/ghiggi/goes_api)](https://github.com/ghiggi/goes_api/blob/master/LICENSE)
+
+The GOES-API is still in development. Feel free to try it out and to report issues or to suggest changes.
+
+## Quickstart
 
 The code in this repository provides an API to download, query and filter GOES16 and GOES17 satellite data.
 
@@ -43,9 +47,20 @@ Then, install the GOES-API package by typing the following command in the comman
 
     pip install goes_api
 
+## Citation
+
+If you are using GOES-API, please cite:
+
+> Ghiggi Gionata. ghiggi/goes_api. Zenodo. https://doi.org/10.5281/zenodo.7787851
+
+If you want to cite a specific version, have a look at the [Zenodo site](10.5281/zenodo.7787851).
+
 ## Contributors
 
 * [Gionata Ghiggi](https://people.epfl.ch/gionata.ghiggi)
+
+10.5281/zenodo.7787851
+
 
 ## License
 
