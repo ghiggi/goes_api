@@ -17,6 +17,7 @@
 """Define functions to retrieve ABI fixed grid AreaDefinition."""
 
 # from pyresample import AreaDefinition
+import xarray as xr 
 from pyresample_dev.utils_swath import * # temporary hack
 
 
@@ -108,26 +109,45 @@ def get_abi_fixed_grid_area(satellite, sector, resolution):
     return area_def      
 
 
-# import cartopy.crs as ccrs
-# import matplotlib.pyplot as plt
+def get_orbital_parameters(satellite):
+    """Get orbital_parameters dictionary (satpy-compatible)."""
+    if satellite == "goes-16":
+        orbital_parameters = {'projection_longitude': -75.0,
+                              'projection_latitude': 0.0,
+                              'projection_altitude': 35786023.0,
+                              'satellite_nominal_latitude': 0.0,
+                              'satellite_nominal_longitude': -75.19999694824219,
+                              'satellite_nominal_altitude': 35786023.4375,
+                              'yaw_flip': False,
+        }
+    elif satellite in ["goes-17", "goes-18"]:
+        orbital_parameters = {'projection_longitude': -137.0,
+                              'projection_latitude': 0.0,
+                              'projection_altitude': 35786023.0,
+                              'satellite_nominal_latitude': 0.0,
+                              'satellite_nominal_longitude': -137.1999969482422,
+                              'satellite_nominal_altitude': 35786023.4375,
+                              'yaw_flip': True}
+    else: 
+        raise ValueError("Invalid satellite {satellite}.")
+    return orbital_parameters
 
-# proj_crs = ccrs.PlateCarree()
-# fig, ax = plt.subplots(subplot_kw=dict(projection=proj_crs))
-# area = get_abi_fixed_grid_area(satellite="goes-16", sector="F", resolution="2000")
-# area.plot()
 
-# proj_crs = ccrs.PlateCarree()
-# fig, ax = plt.subplots(subplot_kw=dict(projection=proj_crs))
-# area = get_abi_fixed_grid_area(satellite="goes-17", sector="F", resolution="2000")
-# area.plot()
+def get_abi_dataarray(satellite, sector, resolution):
+    """Create template DataArray for ABI area."""
+    # Retrieve AreaDefinition
+    area_def = get_abi_fixed_grid_area(satellite=satellite,
+                                       sector=sector, 
+                                       resolution=resolution)
+    # Create DataArray
+    lons, lats = area_def.get_lonlats()
+    coords = {"latitude": (["y","x"], lats),
+              "longitude": (["y","x"], lons)}
+    da = xr.DataArray(lons, dims = ("y","x"),
+                      coords=coords, name = "dummy")
+    # Add attributes 
+    da.attrs['area'] = area_def 
+    da.attrs['orbital_parameters'] = get_orbital_parameters(satellite=satellite)
+    return da  
 
-# # TODO: DOUBLE CHECK 
-# proj_crs = ccrs.PlateCarree()
-# fig, ax = plt.subplots(subplot_kw=dict(projection=proj_crs))
-# area = get_abi_fixed_grid_area(satellite="goes-17", sector="C", resolution="2000")
-# area.plot()
 
-# proj_crs = ccrs.PlateCarree()
-# fig, ax = plt.subplots(subplot_kw=dict(projection=proj_crs))
-# area = get_abi_fixed_grid_area(satellite="goes-16", sector="C", resolution="2000")
-# area.plot()
