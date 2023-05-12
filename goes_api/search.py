@@ -48,7 +48,7 @@ from goes_api.io import (
 from goes_api.operations import (
     ensure_operational_data,
     ensure_data_availability,
-    ensure_regular_timesteps,
+    ensure_fixed_scan_mode,
     ensure_time_period_is_covered,
     ensure_all_files,
 )
@@ -81,6 +81,7 @@ def _enable_multiple_products(func):
         elif isinstance(kwargs['product'], list): 
             products = kwargs['product']
             group_by_key = kwargs['group_by_key']
+            operational_checks = kwargs['operational_checks']
             list_fpaths = []
             for product in products:
                 new_kwargs = kwargs.copy()
@@ -89,7 +90,11 @@ def _enable_multiple_products(func):
                 fpaths = func(*args, **new_kwargs)
                 list_fpaths.append(fpaths)
             # Flat the list 
-            fpaths = [item for sublist in list_fpaths for item in sublist]   
+            fpaths = [item for sublist in list_fpaths for item in sublist]
+            # Operational checks
+            if operational_checks:
+                ensure_all_files(fpaths)
+            # Group files if asked 
             if group_by_key is not None:
                fpaths = group_files(fpaths, key=group_by_key)
             return fpaths
@@ -179,9 +184,9 @@ def find_files(
     operational_checks: bool, optional 
         If True, it checks that:
         1. the file comes from the GOES Operational system Real-time (OR) environment
-        2. there are some files available 
-        3. the acquisitions are regular in time
-        4. the time period between start_time and end_time is covered.
+        2. the scan mode is fixed (for ABI)
+        4. the time period between start_time and end_time is fully covered, 
+            without missing acquisition
     """
    
     # Check inputs
@@ -265,14 +270,14 @@ def find_files(
         # - Ensure that the file comes from the GOES Operational system Real-time (OR) environment
         ensure_operational_data(fpaths)
         # - Ensure data availability
-        ensure_data_availability(fpaths, sensor=sensor, product=product, start_time=start_time, end_time=end_time)
+        ensure_data_availability(fpaths, sensor=sensor, start_time=start_time, end_time=end_time, product=product)
+        # - Ensure fixed scan mode (for ABI)
+        ensure_fixed_scan_mode(fpaths)
         # - Ensure time period covered 
-        ensure_time_period_is_covered(fpaths, start_time=start_time, end_time=end_time, product=product)
-        # - Ensure same number of files per timestep
+        ensure_time_period_is_covered(fpaths, start_time=start_time, end_time=end_time,product=product)
+        # - Ensure same number of files per timestep (i.e. for Rad)
+        # --> TODO: for ABI L1 and L2 Rad --> check 16 bands (or based on filter_params ... )
         ensure_all_files(fpaths, product=product)
-        # - Ensure regular timesteps 
-        ensure_regular_timesteps(fpaths, timedelta=None)
-     
     
     # Group fpaths by key
     if group_by_key:

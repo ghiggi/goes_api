@@ -51,41 +51,98 @@ def ensure_data_availability(fpaths, sensor=None, product=None, start_time=None,
             raise ValueError(f"No {sensor} {product} data available between {start_time} and {end_time} !")
 
 
-@_ensure_fpaths_list        
-def ensure_regular_timesteps(fpaths, timedelta=None):
-    """Ensure files are regularly separated ... by "timedelta" seconds (if not None)."""
-    # Retrieve available timesteps
-    timesteps = np.unique(get_key_from_filepaths(fpaths, "start_time"))
-    # Check enough timesteps
-    if len(timesteps) == 0: 
-        raise ValueError("No timesteps available !")
-    if len(timesteps) == 1: 
-        raise ValueError("Only one timestep available !")
-    # Compute unique time deltas
-    timedeltas = [dt.seconds for dt in list(np.diff(timesteps))]
-    timedeltas = np.unique(timedeltas)
-    # Check unique timedelta
-    if len(timedeltas) != 1:
-        raise ValueError(f"No unique time interval between GEO imagery. Time intervals are: {timedeltas} !")
-    # Check if unique timedelta meets the expectations
-    if timedelta is not None: 
-        if timedeltas != timedelta:
-            raise ValueError(f"The time interval between GEO imagery is not {timedelta} !")
+@_ensure_fpaths_list  
+def ensure_fixed_scan_mode(fpaths): 
+    scan_modes = get_key_from_filepaths(fpaths, "scan_mode")
+    scan_modes = np.unique(scan_modes)
+    if len(scan_modes) != 1:
+        raise ValueError(f"During the specified time period the following scan modes occured: {scan_modes}")
+        
 
 
-@_ensure_fpaths_list        
+def _ensure_not_missing_abi_acquisitions(fpaths, sector, product=''):
+    """Check that there are not missing ABI acquisitions. 
+    
+    It take into account of the ABI scan modes.
+    """
+    from goes_api.listing import ABI_INTERVAL
+    abi_interval = ABI_INTERVAL[sector].copy() # in minutes
+    file_start_times = np.unique(get_key_from_filepaths(fpaths, "start_time"))
+    file_end_times = np.unique(get_key_from_filepaths(fpaths, "end_time"))
+    file_scan_modes = get_key_from_filepaths(fpaths, "scan_mode")
+    
+    missing_intervals = [] 
+    for i in range(len(file_start_times) - 1):
+       scan_mode = file_scan_modes[i]
+       expected_interval = abi_interval[scan_mode]
+       observed_interval = file_start_times[i+1] - file_start_times[i]
+       if observed_interval.total_seconds()/60 > expected_interval:
+           missing_intervals.append((file_end_times[i], file_start_times[i+1]))
+
+    if missing_intervals:
+       error_message = f"Missing {product} data between:\n"
+       for start_tt, end_tt in missing_intervals:
+           error_message += f"[{start_tt} - {end_tt}]\n"
+       raise ValueError(error_message)
+      
+        
+def _ensure_not_missing_acquisitions(fpaths, product=''):
+    """Check that there are not missing acquisitions. 
+    
+    It takes the smallest interval as the maximum allowed interval.
+    """
+    file_start_times = np.unique(get_key_from_filepaths(fpaths, "start_time"))
+    file_end_times = np.unique(get_key_from_filepaths(fpaths, "end_time"))
+    # Compute time intervals and infer minimum dt allowed
+    timedeltas = np.diff(file_start_times).tolist()
+    timedeltas = [dt.total_seconds() for dt in timedeltas]
+    min_dt = np.min(timedeltas)
+    missing_intervals = [] 
+    for i in range(len(file_start_times) - 1):
+       if timedeltas[i] > min_dt:
+           missing_intervals.append((file_end_times[i], file_start_times[i+1]))
+    if missing_intervals:
+       error_message = f"Missing {product} data between:\n"
+       for start_tt, end_tt in missing_intervals:
+           error_message += f"[{start_tt} - {end_tt}]\n"
+       raise ValueError(error_message)
+       
+       
 def ensure_time_period_is_covered(fpaths, start_time, end_time, product=''):
-    """Ensure the time period between the specified start_time and end_time is covered."""
+    """Ensure the time period between the specified start_time and end_time is covered.
+    
+    It also check that there are not missing acquisitions.
+    """
+    # Check if there is at least 1 file
+    if len(fpaths) == 0: 
+        raise ValueError(f"Any {product} data available along the entire [{start_time}, {end_time}] period.")
+    # Retrieve infos 
+    product = get_key_from_filepaths(fpaths[0], "product")
+    sector = get_key_from_filepaths(fpaths[0], "sector")
+    sensor = get_key_from_filepaths(fpaths[0], "sensor")
     # Retrieve available file start_time and end_time
     file_start_times = np.unique(get_key_from_filepaths(fpaths, "start_time"))
     file_end_times = np.unique(get_key_from_filepaths(fpaths, "end_time"))
-    # Retrieve effective data_start_time and end_time
+    #-----------------------------------------------
+    # Check time period extremities are covered 
     data_start_time = np.min(file_start_times)
     data_end_time = np.max(file_end_times)
     if data_start_time > start_time:
-        raise ValueError(f"{product} Data between {start_time} and {data_start_time} are not available.")
+        raise ValueError(f"The {product} data between {start_time} and {data_start_time} are not available.")
     if data_end_time < end_time: 
-        raise ValueError(f"{product} Data between {data_end_time} and {end_time} are not available.")
+        raise ValueError(f"The {product} data between {data_end_time} and {end_time} are not available.")
+     #-----------------------------------------------
+    # If only 1 filepath, do not do further checks 
+    if len(fpaths) == 1: 
+        return None 
+    #-----------------------------------------------
+    # Check no missing acquisitions along the time period 
+    if sensor == "ABI": 
+        _ensure_not_missing_abi_acquisitions(fpaths, sector=sector, product=product)    
+    else: 
+        _ensure_not_missing_acquisitions(fpaths, product=product) 
+    #-----------------------------------------------
+    return None 
 
 
 @_ensure_fpaths_list        

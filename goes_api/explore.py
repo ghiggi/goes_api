@@ -17,27 +17,32 @@
 
 import os
 import webbrowser
+from goes_api.configs import get_goes_base_dir
 from goes_api.checks import (
     _check_satellite,
     _check_channel,
     _check_product,
 )
+from goes_api.io import _get_product_name, _dt_to_year_doy_hour
 
 
-def open_directory_explorer(satellite, protocol=None, base_dir=None):
+def open_directory_explorer(satellite, protocol="s3", base_dir=None):
     """Open the cloud bucket / local explorer into a webpage.
 
     Parameters
     ----------
-    base_dir : str
-        Base directory path where the <GOES-**> satellite is located.
-        This argument must be specified only if wanting to explore the local storage.
-        If it is specified, protocol and fs_args arguments must not be specified.
-    protocol : str
+    satellite : str
+        The name of the satellite.
+        Use `goes_api.available_satellites()` to retrieve the available satellites.
+    protocol : str, optional
         String specifying the cloud bucket storage that you want to explore.
         Use `goes_api.available_protocols()` to retrieve available protocols.
-        If protocol is specified, base_dir must be None !
-
+        The default is "s3".
+    base_dir : str, optional
+        Local base directory path where GOES data are stored.
+        This argument must be specified only if wanting to explore the local storage.
+        If protocol="file" and base_dir is None, base_dir is retrieved from 
+        the GOES-API config file.
     """
     satellite = _check_satellite(satellite)
     if protocol == "s3":
@@ -48,13 +53,82 @@ def open_directory_explorer(satellite, protocol=None, base_dir=None):
         # goes-16
         fpath = f"https://console.cloud.google.com/storage/browser/gcp-public-data-{satellite}"
         webbrowser.open(fpath, new=1)
-    elif base_dir is not None:
+    elif protocol in ["file", "local"]:
+        # Get default local directory if not specified
+        base_dir = get_goes_base_dir(base_dir)
+        # Open storage explorer
         webbrowser.open(os.path.join(base_dir, satellite))
     else:
         raise NotImplementedError(
             "Current available protocols are 'gcs', 's3', 'local'."
         )
 
+
+def open_hourly_directory_explorer(
+    satellite, 
+    sensor, 
+    product_level, 
+    product, 
+    time, 
+    sector=None, 
+    protocol="s3", base_dir=None
+    ):
+    """Open the cloud bucket / local exlorer at an hourly directory into a webpage.
+
+    Parameters
+    ----------
+    satellite : str
+        The name of the satellite.
+        Use `goes_api.available_satellites()` to retrieve the available satellites.
+    sensor : str
+        Satellite sensor.
+        See `goes_api.available_sensors()` for available sensors.
+    product_level : str
+        Product level.
+        See `goes_api.available_product_levels()` for available product levels.
+    product : str
+        The name of the product to retrieve.
+        See `goes_api.available_products()` for a list of available products.
+    time : datetime.datetime
+        Time at which you want to explore file content.
+    sector : str, optional
+        The acronym of the ABI sector for which to retrieve the files.
+        See `goes_api.available_sectors()` for a list of available sectors.
+    protocol : str, optional
+        String specifying the cloud bucket storage that you want to explore.
+        Use `goes_api.available_protocols()` to retrieve available protocols.
+        The default is "s3".
+    base_dir : str, optional
+        Local base directory path where GOES data are stored.
+        This argument must be specified only if wanting to explore the local storage.
+        If protocol="file" and base_dir is None, base_dir is retrieved from 
+        the GOES-API config file.
+
+    """    
+    satellite = _check_satellite(satellite)
+    year, doy, hour = _dt_to_year_doy_hour(time)
+    product_name = _get_product_name(sensor=sensor, 
+                                     product_level=product_level, 
+                                     product=product, 
+                                     sector=sector) 
+    if protocol == "s3":
+        satellite = satellite.replace("-", "")  # goes16
+        fpath = f"https://noaa-goes16.s3.amazonaws.com/index.html#{product_name}/{year}/{doy}/{hour}/"
+        webbrowser.open(fpath, new=1)
+    elif protocol == "gcs":
+        # goes-16
+        fpath = f"https://console.cloud.google.com/storage/browser/gcp-public-data-{satellite}/{product_name}/{year}/{doy}/{hour}"
+        webbrowser.open(fpath, new=1)
+    elif protocol in ["file", "local"]:
+        # Get default local directory if not specified
+        base_dir = get_goes_base_dir(base_dir)
+        # Open storage explorer
+        webbrowser.open(os.path.join(base_dir, satellite, product_name, year, doy, hour))
+    else:
+        raise NotImplementedError(
+            "Current available protocols are 'gcs', 's3', 'local'."
+        )
+       
 
 def open_abi_channel_guide(channel):
     """Open ABI QuickGuide of the channel.

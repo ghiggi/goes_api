@@ -33,8 +33,9 @@ from goes_api.info import (
 )
 from goes_api.operations import (
     ensure_operational_data,
-    ensure_data_availability,
-    ensure_regular_timesteps,
+    ensure_fixed_scan_mode,
+    ensure_time_period_is_covered,
+
 )
     
 from goes_api.search import (
@@ -57,6 +58,7 @@ from goes_api.download import (
 )
 from goes_api.explore import (
     open_directory_explorer,
+    open_hourly_directory_explorer,
     open_abi_channel_guide,
     open_abi_product_guide,
 )
@@ -97,6 +99,7 @@ __all__ = [
     "filter_files",
     "generate_kerchunk_files",
     "open_directory_explorer",
+    "open_hourly_directory_explorer", 
     "open_abi_channel_guide",
     "open_abi_product_guide",
 ]

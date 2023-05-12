@@ -16,6 +16,7 @@
 # goes_api. If not, see <http://www.gnu.org/licenses/>.
 
 import os
+import datetime
 import numpy as np
 from trollsift import Parser
 from goes_api.checks import _check_group_by_key
@@ -376,6 +377,14 @@ def _separate_product_scene_abbr(product_scene_abbr):
     else:
         raise NotImplementedError("Adapat the file patterns.")
 
+def _round_datetime_to_nearest_minute(time):
+    """Round datetime time to nearest minute."""
+    # Add half a minute to the datetime object
+    rounded = time + datetime.timedelta(seconds=30)
+    # Truncate the seconds and microseconds
+    rounded = rounded.replace(second=0, microsecond=0)
+    return rounded
+
 
 def _get_info_from_filename(fname):
     """Retrieve file information dictionary from filename."""
@@ -391,14 +400,18 @@ def _get_info_from_filename(fname):
     p = Parser(fpattern)
     info_dict = p.parse(fname)
     
+    # For sensor other than ABI, add scan_mode = ""
+    if "scan_mode" not in info_dict:
+        info_dict["scan_mode"] = ""
+    
     # Assert sensor and product_level are correct
     assert sensor == info_dict['sensor']
     assert product_level == info_dict['product_level']
     
     # Round start_time and end_time to minute resolution
-    info_dict["start_time"] = info_dict["start_time"].replace(microsecond=0, second=0)
-    info_dict["end_time"] = info_dict["end_time"].replace(microsecond=0, second=0)
-    
+    info_dict["start_time"] =  _round_datetime_to_nearest_minute(info_dict["start_time"]) 
+    info_dict["end_time"] =  _round_datetime_to_nearest_minute(info_dict["end_time"]) 
+
     # Special treatment for ABI L2 products
     if info_dict.get("product_scene_abbr") is not None:
         # Identify scene_abbr

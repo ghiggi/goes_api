@@ -15,6 +15,21 @@
 # You should have received a copy of the GNU General Public License along with
 # goes_api. If not, see <http://www.gnu.org/licenses/>.
 
+ABI_INTERVAL = {
+    'F': {'M3': 15,
+          'M6': 10,
+          'M4': 5, 
+          },
+    'C': {'M3': 5,
+         'M6': 5,
+         # 'M4': '', # not produced
+         },
+   'M': {'M3': 1,
+         'M6': 1,
+         # 'M4': '', # not produced      
+        },
+}
+    
 ABI_L1_PRODUCTS = {
     "Rad": "Radiances",
 }
