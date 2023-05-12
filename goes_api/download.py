@@ -24,6 +24,7 @@ import pandas as pd
 import concurrent.futures
 from concurrent.futures import ThreadPoolExecutor
 from tqdm import tqdm
+from goes_api.configs import get_goes_base_dir
 from goes_api.io import get_filesystem
 from goes_api.info import group_files
 from goes_api.checks import (
@@ -240,7 +241,6 @@ def _enable_multiple_products(func):
 @print_elapsed_time
 @_enable_multiple_products
 def download_files(
-    base_dir,
     protocol,
     satellite,
     sensor,
@@ -255,6 +255,7 @@ def download_files(
     progress_bar=True,
     verbose=True,
     filter_parameters={},
+    base_dir = None, 
     fs_args={},
 ):
     """
@@ -262,16 +263,10 @@ def download_files(
 
     Parameters
     ----------
-    base_dir : str
-        Base directory path where the <GOES-**>/<product>/... directory structure
-        should be created.
     protocol : str
         String specifying the cloud bucket storage from which to retrieve
         the data.
         Use `goes_api.available_protocols()` to retrieve available protocols.
-    fs_args : dict, optional
-        Dictionary specifying optional settings to initiate the fsspec.filesystem.
-        The default is an empty dictionary. Anonymous connection is set by default.
     satellite : str
         The name of the satellite.
         Use `goes_api.available_satellites()` to retrieve the available satellites.
@@ -295,6 +290,13 @@ def download_files(
         Dictionary specifying option filtering parameters.
         Valid keys includes: `channels`, `scan_modes`, `scene_abbr`.
         The default is a empty dictionary (no filtering).
+    base_dir : str, optional
+        The path to the directory where to store GOES data. 
+        If None, it use the one specified  in the GOES-API config file.
+        The default is None.
+    fs_args : dict, optional
+        Dictionary specifying optional settings to initiate the fsspec.filesystem.
+        The default is an empty dictionary. Anonymous connection is set by default.
     n_threads: int
         Number of files to be downloaded concurrently.
         The default is 20. The max value is set automatically to 50.
@@ -315,6 +317,8 @@ def download_files(
 
     """
     # -------------------------------------------------------------------------.
+    # Get default directory 
+    base_dir = get_goes_base_dir(base_dir)
     # Checks
     _check_download_protocol(protocol)
     base_dir = _check_base_dir(base_dir)
@@ -445,7 +449,6 @@ def download_files(
 
 
 def download_closest_files(
-    base_dir,
     protocol,
     satellite,
     sensor,
@@ -460,6 +463,7 @@ def download_closest_files(
     progress_bar=True,
     verbose=True,
     fs_args={},
+    base_dir=None,
 ):
     """
     Donwload files from a cloud bucket storage closest to the specified time.
@@ -514,7 +518,10 @@ def download_closest_files(
     verbose : bool, optional
         If True, it print some information concerning the download process.
         The default is False.
-
+    base_dir : str (optional)
+        The path to the directory where to store GOES data. 
+        If None, it use the one specified  in the GOES-API config file.
+        The default is None.
     """
     # Checks
     _check_download_protocol(protocol)
@@ -554,7 +561,6 @@ def download_closest_files(
 
 
 def download_latest_files(
-    base_dir,
     protocol,
     satellite,
     sensor,
@@ -571,6 +577,7 @@ def download_latest_files(
     progress_bar=True,
     verbose=True,
     fs_args={},
+    base_dir=None,
 ):
     """
     Donwload latest available files from a cloud bucket storage.
@@ -589,9 +596,6 @@ def download_latest_files(
          - the regularity of the previous timesteps, with no missing timesteps;
          - the regularity of the scan mode, i.e. not switching from M3 to M6,
          - if sector == M, the mesoscale domains are not changing within the considered period.
-    base_dir : str
-        Base directory path where the <GOES-**>/<product>/... directory structure
-        should be created.
     protocol : str
         String specifying the cloud bucket storage from which to retrieve
         the data.
@@ -635,7 +639,10 @@ def download_latest_files(
     verbose : bool, optional
         If True, it print some information concerning the download process.
         The default is False.
-
+    base_dir : str (optional)
+        The path to the directory where to store GOES data. 
+        If None, it use the one specified  in the GOES-API config file.
+        The default is None.
     """
     # Checks
     _check_download_protocol(protocol)
@@ -676,7 +683,6 @@ def download_latest_files(
 
 
 def download_previous_files(
-    base_dir,
     protocol,
     satellite,
     sensor,
@@ -694,6 +700,7 @@ def download_previous_files(
     progress_bar=True,
     verbose=True,
     fs_args={},
+    base_dir=None,
 ):
     """
     Donwload files for N timesteps previous to start_time.
@@ -716,9 +723,6 @@ def download_previous_files(
          - the regularity of the previous timesteps, with no missing timesteps;
          - the regularity of the scan mode, i.e. not switching from M3 to M6,
          - if sector == M, the mesoscale domains are not changing within the considered period.
-    base_dir : str
-        Base directory path where the <GOES-**>/<product>/... directory structure
-        should be created.
     protocol : str
         String specifying the cloud bucket storage from which to retrieve
         the data.
@@ -762,7 +766,10 @@ def download_previous_files(
     verbose : bool, optional
         If True, it print some information concerning the download process.
         The default is False.
-
+    base_dir : str (optional)
+        The path to the directory where to store GOES data. 
+        If None, it use the one specified  in the GOES-API config file.
+        The default is None.
     """
     # Checks
     _check_download_protocol(protocol)
@@ -811,7 +818,6 @@ def download_previous_files(
 
 
 def download_next_files(
-    base_dir,
     protocol,
     satellite,
     sensor,
@@ -829,6 +835,7 @@ def download_next_files(
     progress_bar=True,
     verbose=True,
     fs_args={},
+    base_dir=None,
 ):
     """
     Donwload files for N timesteps after start_time.
@@ -850,10 +857,6 @@ def download_next_files(
          - the regularity of the previous timesteps, with no missing timesteps;
          - the regularity of the scan mode, i.e. not switching from M3 to M6,
          - if sector == M, the mesoscale domains are not changing within the considered period.
-
-    base_dir : str
-        Base directory path where the <GOES-**>/<product>/... directory structure
-        should be created.
     protocol : str
         String specifying the cloud bucket storage from which to retrieve
         the data.
@@ -897,7 +900,10 @@ def download_next_files(
     verbose : bool, optional
         If True, it print some information concerning the download process.
         The default is False.
-
+    base_dir : str (optional)
+        The path to the directory where to store GOES data. 
+        If None, it use the one specified  in the GOES-API config file.
+        The default is None.
     """
     # Checks
     _check_download_protocol(protocol)
@@ -945,31 +951,29 @@ def download_next_files(
 
 
 ####---------------------------------------------------------------------------.
-def download_monthly_files(base_dir,
-                           protocol,
-                           satellite,
-                           sensor,
-                           product_level,
-                           product,
-                           sector,
-                           year,
-                           month,
-                           n_threads=20,
-                           force_download=False,
-                           check_data_integrity=True,
-                           progress_bar=True,
-                           verbose=True,
-                           filter_parameters={},
-                           fs_args={},
-                           ): 
+def download_monthly_files(
+    protocol,
+    satellite,
+    sensor,
+    product_level,
+    product,
+    sector,
+    year,
+    month,
+    n_threads=20,
+    force_download=False,
+    check_data_integrity=True,
+    progress_bar=True,
+    verbose=True,
+    filter_parameters={},
+    fs_args={},
+    base_dir=None,
+): 
     """
     Donwload monthly files from a cloud bucket storage.
 
     Parameters
     ----------
-    base_dir : str
-        Base directory path where the <GOES-**>/<product>/... directory structure
-        should be created.
     protocol : str
         String specifying the cloud bucket storage from which to retrieve
         the data.
@@ -1012,6 +1016,10 @@ def download_monthly_files(base_dir,
     verbose : bool, optional
         If True, it print some information concerning the download process.
         The default is False.
+    base_dir : str (optional)
+        The path to the directory where to store GOES data. 
+        If None, it use the one specified  in the GOES-API config file.
+        The default is None.
 
     """
     # -------------------------------------------------------------------------.
@@ -1041,30 +1049,28 @@ def download_monthly_files(base_dir,
     return list_all_local_fpaths
 
 
-def download_daily_files(base_dir,
-                        protocol,
-                        satellite,
-                        sensor,
-                        product_level,
-                        product,
-                        sector,
-                        date, 
-                        n_threads=20,
-                        force_download=False,
-                        check_data_integrity=True,
-                        progress_bar=True,
-                        verbose=True,
-                        filter_parameters={},
-                        fs_args={},
-                        ): 
+def download_daily_files(
+    protocol,
+    satellite,
+    sensor,
+    product_level,
+    product,
+    sector,
+    date, 
+    n_threads=20,
+    force_download=False,
+    check_data_integrity=True,
+    progress_bar=True,
+    verbose=True,
+    filter_parameters={},
+    fs_args={},
+    base_dir=None,
+    ): 
     """
     Donwload daily files from a cloud bucket storage.
 
     Parameters
     ----------
-    base_dir : str
-        Base directory path where the <GOES-**>/<product>/... directory structure
-        should be created.
     protocol : str
         String specifying the cloud bucket storage from which to retrieve
         the data.
@@ -1104,7 +1110,10 @@ def download_daily_files(base_dir,
     verbose : bool, optional
         If True, it print some information concerning the download process.
         The default is False.
-
+    base_dir : str (optional)
+        The path to the directory where to store GOES data. 
+        If None, it use the one specified  in the GOES-API config file.
+        The default is None.
     """
     # -------------------------------------------------------------------------.
     # Checks

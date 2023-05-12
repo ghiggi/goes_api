@@ -15,6 +15,8 @@
 # You should have received a copy of the GNU General Public License along with
 # goes_api. If not, see <http://www.gnu.org/licenses/>.
 
+from goes_api.configs import define_goes_api_configs as define_configs
+from goes_api.configs import read_goes_api_configs as read_configs
 from goes_api.info import (
     available_protocols,
     available_sensors,
@@ -61,6 +63,8 @@ from goes_api.explore import (
 from goes_api.filter import filter_files
 
 __all__ = [
+    "define_configs",
+    "read_configs",
     "available_protocols",
     "available_sensors",
     "available_satellites",

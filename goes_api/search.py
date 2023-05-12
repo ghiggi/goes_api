@@ -19,6 +19,7 @@
 import os
 import datetime
 import numpy as np
+from goes_api.configs import get_goes_base_dir
 from goes_api.info import group_files
 from goes_api.filter import _filter_files
 from goes_api.checks import (
@@ -110,7 +111,7 @@ def find_files(
     group_by_key=None,
     connection_type=None,
     base_dir=None,
-    protocol=None,
+    protocol="file",
     fs_args={},
     verbose=False,
     operational_checks=True, 
@@ -124,14 +125,19 @@ def find_files(
 
     Parameters
     ----------
-    base_dir : str
-        Base directory path where the <GOES-**> satellite is located.
-        This argument must be specified only if searching files on local storage.
-        If it is specified, protocol and fs_args arguments must not be specified.
-    protocol : str
-        String specifying the cloud bucket storage from which to retrieve
-        the data. It must be specified if not searching data on local storage.
-        Use `goes_api.available_protocols()` to retrieve available protocols.
+    base_dir : str, optional
+        This argument must be specified only if searching files on the local storage 
+        when protocol="file". 
+        It represents the path to the local directory where to search for GOES data. 
+        If protocol="file" and base_dir is None, base_dir is retrieved from 
+        the GOES-API config file.
+        The default is None.
+    protocol : str (optional)
+        String specifying the location where to search for the data. 
+        If protocol="file", it searches on local storage (indicated by base_dir).
+        Otherwise, protocol refers to a specific cloud bucket storage.
+        Use `goes_api.available_protocols()` to check the available protocols.
+        The default is "file".
     fs_args : dict, optional
         Dictionary specifying optional settings to initiate the fsspec.filesystem.
         The default is an empty dictionary. Anonymous connection is set by default.
@@ -177,16 +183,20 @@ def find_files(
         3. the acquisitions are regular in time
         4. the time period between start_time and end_time is covered.
     """
+   
     # Check inputs
-    if protocol is None and base_dir is None:
-        raise ValueError("Specify 1 between `base_dir` and `protocol`")
-    if base_dir is not None:
-        if protocol is not None:
-            if protocol not in ["file", "local"]:
-                raise ValueError("If base_dir is specified, protocol must be None.")
-        else:
-            protocol = "file"
-            fs_args = {}
+    if protocol not in ["file", "local"] and base_dir is not None:
+        raise ValueError("If protocol is not 'file' or 'local', base_dir must not be specified !")
+    
+    # Check for when searching on local storage 
+    if protocol in ["file", "local"]:
+        # Get default local directory if base_dir = None
+        base_dir = get_goes_base_dir(base_dir)
+        # Set protocol and fs_args expected by fsspec
+        protocol = "file"
+        fs_args = {}            
+            
+    #-------------------------------------------------------------------------.
     # Format inputs
     protocol = _check_protocol(protocol)
     base_dir = _check_base_dir(base_dir)
@@ -284,7 +294,7 @@ def find_closest_start_time(
     product,
     sector=None, 
     base_dir=None,
-    protocol=None,
+    protocol="file",
     fs_args={},
     filter_parameters={},
 ):
@@ -295,14 +305,19 @@ def find_closest_start_time(
     ----------
     time : datetime.datetime
         The time for which you desire to know the closest file start_time.
-    base_dir : str
-        Base directory path where the <GOES-**> satellite is located.
-        This argument must be specified only if searching files on local storage.
-        If it is specified, protocol and fs_args arguments must not be specified.
-    protocol : str
-        String specifying the cloud bucket storage from which to retrieve
-        the data. It must be specified if not searching data on local storage.
-        Use `goes_api.available_protocols()` to retrieve available protocols.
+    base_dir : str, optional
+        This argument must be specified only if searching files on the local storage 
+        when protocol="file". 
+        It represents the path to the local directory where to search for GOES data. 
+        If protocol="file" and base_dir is None, base_dir is retrieved from 
+        the GOES-API config file.
+        The default is None.
+    protocol : str (optional)
+        String specifying the location where to search for the data. 
+        If protocol="file", it searches on local storage (indicated by base_dir).
+        Otherwise, protocol refers to a specific cloud bucket storage.
+        Use `goes_api.available_protocols()` to check the available protocols.
+        The default is "file".
     fs_args : dict, optional
         Dictionary specifying optional settings to initiate the fsspec.filesystem.
         The default is an empty dictionary. Anonymous connection is set by default.
@@ -370,7 +385,7 @@ def find_latest_start_time(
     sector=None, 
     connection_type=None,
     base_dir=None,
-    protocol=None,
+    protocol="file",
     fs_args={},
     filter_parameters={},
     look_ahead_minutes=30,
@@ -383,14 +398,19 @@ def find_latest_start_time(
     look_ahead_minutes: int, optional
         Number of minutes before actual time to search for latest data.
         THe default is 30 minutes.
-    base_dir : str
-        Base directory path where the <GOES-**> satellite is located.
-        This argument must be specified only if searching files on local storage.
-        If it is specified, protocol and fs_args arguments must not be specified.
-    protocol : str
-        String specifying the cloud bucket storage from which to retrieve
-        the data. It must be specified if not searching data on local storage.
-        Use `goes_api.available_protocols()` to retrieve available protocols.
+    base_dir : str, optional
+        This argument must be specified only if searching files on the local storage 
+        when protocol="file". 
+        It represents the path to the local directory where to search for GOES data. 
+        If protocol="file" and base_dir is None, base_dir is retrieved from 
+        the GOES-API config file.
+        The default is None.
+    protocol : str (optional)
+        String specifying the location where to search for the data. 
+        If protocol="file", it searches on local storage (indicated by base_dir).
+        Otherwise, protocol refers to a specific cloud bucket storage.
+        Use `goes_api.available_protocols()` to check the available protocols.
+        The default is "file".
     fs_args : dict, optional
         Dictionary specifying optional settings to initiate the fsspec.filesystem.
         The default is an empty dictionary. Anonymous connection is set by default.
@@ -453,7 +473,7 @@ def find_closest_files(
     sector=None, 
     connection_type=None,
     base_dir=None,
-    protocol=None,
+    protocol="file",
     fs_args={},
     filter_parameters={},
 ):
@@ -466,14 +486,19 @@ def find_closest_files(
 
     Parameters
     ----------
-    base_dir : str
-        Base directory path where the <GOES-**> satellite is located.
-        This argument must be specified only if searching files on local storage.
-        If it is specified, protocol and fs_args arguments must not be specified.
-    protocol : str
-        String specifying the cloud bucket storage from which to retrieve
-        the data. It must be specified if not searching data on local storage.
-        Use `goes_api.available_protocols()` to retrieve available protocols.
+    base_dir : str, optional
+        This argument must be specified only if searching files on the local storage 
+        when protocol="file". 
+        It represents the path to the local directory where to search for GOES data. 
+        If protocol="file" and base_dir is None, base_dir is retrieved from 
+        the GOES-API config file.
+        The default is None.
+    protocol : str (optional)
+        String specifying the location where to search for the data. 
+        If protocol="file", it searches on local storage (indicated by base_dir).
+        Otherwise, protocol refers to a specific cloud bucket storage.
+        Use `goes_api.available_protocols()` to check the available protocols.
+        The default is "file".
     fs_args : dict, optional
         Dictionary specifying optional settings to initiate the fsspec.filesystem.
         The default is an empty dictionary. Anonymous connection is set by default.
@@ -548,7 +573,7 @@ def find_latest_files(
     sector=None, 
     connection_type=None,
     base_dir=None,
-    protocol=None,
+    protocol="file",
     fs_args={},
     filter_parameters={},
     N = 1, 
@@ -576,14 +601,19 @@ def find_latest_files(
          - the regularity of the previous timesteps, with no missing timesteps;
          - the regularity of the scan mode, i.e. not switching from M3 to M6,
          - if sector == M, the mesoscale domains are not changing within the considered period.
-    base_dir : str
-        Base directory path where the <GOES-**> satellite is located.
-        This argument must be specified only if searching files on local storage.
-        If it is specified, protocol and fs_args arguments must not be specified.
-    protocol : str
-        String specifying the cloud bucket storage from which to retrieve
-        the data. It must be specified if not searching data on local storage.
-        Use `goes_api.available_protocols()` to retrieve available protocols.
+    base_dir : str, optional
+        This argument must be specified only if searching files on the local storage 
+        when protocol="file". 
+        It represents the path to the local directory where to search for GOES data. 
+        If protocol="file" and base_dir is None, base_dir is retrieved from 
+        the GOES-API config file.
+        The default is None.
+    protocol : str (optional)
+        String specifying the location where to search for the data. 
+        If protocol="file", it searches on local storage (indicated by base_dir).
+        Otherwise, protocol refers to a specific cloud bucket storage.
+        Use `goes_api.available_protocols()` to check the available protocols.
+        The default is "file".
     fs_args : dict, optional
         Dictionary specifying optional settings to initiate the fsspec.filesystem.
         The default is an empty dictionary. Anonymous connection is set by default.
@@ -665,7 +695,7 @@ def find_previous_files(
     filter_parameters={},
     connection_type=None,
     base_dir=None,
-    protocol=None,
+    protocol="file",
     fs_args={},
     include_start_time=False,
     check_consistency=True,
@@ -690,14 +720,19 @@ def find_previous_files(
          - the regularity of the previous timesteps, with no missing timesteps;
          - the regularity of the scan mode, i.e. not switching from M3 to M6,
          - if sector == M, the mesoscale domains are not changing within the considered period.
-    base_dir : str
-        Base directory path where the <GOES-**> satellite is located.
-        This argument must be specified only if searching files on local storage.
-        If it is specified, protocol and fs_args arguments must not be specified.
-    protocol : str
-        String specifying the cloud bucket storage from which to retrieve
-        the data. It must be specified if not searching data on local storage.
-        Use `goes_api.available_protocols()` to retrieve available protocols.
+    base_dir : str, optional
+        This argument must be specified only if searching files on the local storage 
+        when protocol="file". 
+        It represents the path to the local directory where to search for GOES data. 
+        If protocol="file" and base_dir is None, base_dir is retrieved from 
+        the GOES-API config file.
+        The default is None.
+    protocol : str (optional)
+        String specifying the location where to search for the data. 
+        If protocol="file", it searches on local storage (indicated by base_dir).
+        Otherwise, protocol refers to a specific cloud bucket storage.
+        Use `goes_api.available_protocols()` to check the available protocols.
+        The default is "file".
     fs_args : dict, optional
         Dictionary specifying optional settings to initiate the fsspec.filesystem.
         The default is an empty dictionary. Anonymous connection is set by default.
@@ -824,7 +859,7 @@ def find_next_files(
     filter_parameters={},
     connection_type=None,
     base_dir=None,
-    protocol=None,
+    protocol="file",
     fs_args={},
     include_start_time=False,
     check_consistency=True,
@@ -849,14 +884,19 @@ def find_next_files(
          - the regularity of the previous timesteps, with no missing timesteps;
          - the regularity of the scan mode, i.e. not switching from M3 to M6,
          - if sector == M, the mesoscale domains are not changing within the considered period.
-    base_dir : str
-        Base directory path where the <GOES-**> satellite is located.
-        This argument must be specified only if searching files on local storage.
-        If it is specified, protocol and fs_args arguments must not be specified.
-    protocol : str
-        String specifying the cloud bucket storage from which to retrieve
-        the data. It must be specified if not searching data on local storage.
-        Use `goes_api.available_protocols()` to retrieve available protocols.
+    base_dir : str, optional
+        This argument must be specified only if searching files on the local storage 
+        when protocol="file". 
+        It represents the path to the local directory where to search for GOES data. 
+        If protocol="file" and base_dir is None, base_dir is retrieved from 
+        the GOES-API config file.
+        The default is None.
+    protocol : str (optional)
+        String specifying the location where to search for the data. 
+        If protocol="file", it searches on local storage (indicated by base_dir).
+        Otherwise, protocol refers to a specific cloud bucket storage.
+        Use `goes_api.available_protocols()` to check the available protocols.
+        The default is "file".
     fs_args : dict, optional
         Dictionary specifying optional settings to initiate the fsspec.filesystem.
         The default is an empty dictionary. Anonymous connection is set by default.
