@@ -48,6 +48,8 @@ from goes_api.operations import (
     ensure_operational_data,
     ensure_data_availability,
     ensure_regular_timesteps,
+    ensure_time_period_is_covered,
+    ensure_all_files,
 )
 
 ####--------------------------------------------------------------------------.
@@ -169,10 +171,11 @@ def find_files(
         If True, it print some information concerning the file search.
         The default is False.
     operational_checks: bool, optional 
-        If True, it checks that :
+        If True, it checks that:
         1. the file comes from the GOES Operational system Real-time (OR) environment
         2. there are some files available 
-        3. The acquisitions are regular in time
+        3. the acquisitions are regular in time
+        4. the time period between start_time and end_time is covered.
     """
     # Check inputs
     if protocol is None and base_dir is None:
@@ -253,8 +256,13 @@ def find_files(
         ensure_operational_data(fpaths)
         # - Ensure data availability
         ensure_data_availability(fpaths, sensor=sensor, product=product, start_time=start_time, end_time=end_time)
+        # - Ensure time period covered 
+        ensure_time_period_is_covered(fpaths, start_time=start_time, end_time=end_time, product=product)
+        # - Ensure same number of files per timestep
+        ensure_all_files(fpaths, product=product)
         # - Ensure regular timesteps 
         ensure_regular_timesteps(fpaths, timedelta=None)
+     
     
     # Group fpaths by key
     if group_by_key:
