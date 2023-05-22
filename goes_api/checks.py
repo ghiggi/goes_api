@@ -215,11 +215,13 @@ def _check_start_end_time(start_time, end_time):
     # Check start_time and end_time are chronological
     if start_time > end_time:
         raise ValueError("Provide start_time occuring before of end_time")
-    # Check start_time and end_time are in the past
+    # Check start_time is in the past
     if start_time > datetime.datetime.utcnow():
         raise ValueError("Provide a start_time occuring in the past.")
-    if end_time > datetime.datetime.utcnow():
-        raise ValueError("Provide a end_time occuring in the past.")
+        
+    # end_time must not be checked if wanting to search on latest file available ! 
+    # if end_time > datetime.datetime.utcnow():
+    #     raise ValueError("Provide a end_time occuring in the past.")
     return (start_time, end_time)
 
 

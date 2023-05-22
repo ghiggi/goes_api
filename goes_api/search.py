@@ -186,7 +186,7 @@ def find_files(
         1. the file comes from the GOES Operational system Real-time (OR) environment
         2. the scan mode is fixed (for ABI)
         4. the time period between start_time and end_time is fully covered, 
-            without missing acquisition
+            without missing acquisitions.
     """
    
     # Check inputs
@@ -368,6 +368,7 @@ def find_closest_start_time(
         end_time=end_time,
         filter_parameters=filter_parameters,
         group_by_key="start_time",
+        operational_checks=False,
         verbose=False,
     )
     # Select start_time closest to time
@@ -457,6 +458,7 @@ def find_latest_start_time(
         end_time=end_time,
         filter_parameters=filter_parameters,
         group_by_key="start_time",
+        operational_checks=False,
         connection_type=connection_type,
         verbose=False,
     )
@@ -532,7 +534,6 @@ def find_closest_files(
         The type of connection to a cloud bucket.
         This argument applies only if working with cloud buckets (base_dir is None).
         See `goes_api.available_connection_types` for implemented solutions.
-
     """
     # Set time precision to minutes
     time = _check_time(time)
@@ -567,7 +568,10 @@ def find_closest_files(
         )
     idx_closest = np.argmin(np.abs(np.array(list_datetime) - time))
     datetime_closest = list_datetime[idx_closest]
-    return fpath_dict[datetime_closest]
+    
+    # Retrieve filepaths 
+    fpaths = fpath_dict[datetime_closest]
+    return fpaths
 
 
 def find_latest_files(
@@ -582,8 +586,10 @@ def find_latest_files(
     fs_args={},
     filter_parameters={},
     N = 1, 
-    check_consistency=True, 
+    check_consistency=True,
+    operational_checks=True,
     look_ahead_minutes=30,
+    return_list=False,
 ):
     """
     Retrieve latest available files.
@@ -600,12 +606,6 @@ def find_latest_files(
     N : int
         The number of last timesteps for which to download the files.
         The default is 1.
-    check_consistency : bool, optional
-        Check for consistency of the returned files. The default is True.
-        It check that:
-         - the regularity of the previous timesteps, with no missing timesteps;
-         - the regularity of the scan mode, i.e. not switching from M3 to M6,
-         - if sector == M, the mesoscale domains are not changing within the considered period.
     base_dir : str, optional
         This argument must be specified only if searching files on the local storage 
         when protocol="file". 
@@ -645,34 +645,37 @@ def find_latest_files(
         The type of connection to a cloud bucket.
         This argument applies only if working with cloud buckets (base_dir is None).
         See `goes_api.available_connection_types` for implemented solutions.
-
+    operational_checks: bool, optional 
+        If True, it checks that:
+        1. the file comes from the GOES Operational system Real-time (OR) environment
+        2. the scan mode is fixed (for ABI)
+        4. the time period between start_time and end_time is fully covered, 
+            without missing acquisitions.
+    check_consistency : bool, optional
+        Check for consistency of the returned files. The default is True.
+        It check that:
+         - start_time correspond exactly to the start_time of the files;
+         - if sector == M, the mesoscale domains are not changing within the considered period.
     """
     import time
     # Get closest time
-    for i in range(10):
-        try:
-            latest_time = find_latest_start_time(
-                look_ahead_minutes=look_ahead_minutes, 
-                base_dir=base_dir,
-                protocol=protocol,
-                fs_args=fs_args,
-                satellite=satellite,
-                sensor=sensor,
-                product_level=product_level,
-                product=product,
-                sector=sector,
-                filter_parameters=filter_parameters,
-            )
-            break
-        except: 
-            time.sleep(1)
-            if i == 9:
-                raise ValueError("Impossible to retrieve last timestep available.")
+    latest_time = find_latest_start_time(
+        look_ahead_minutes=look_ahead_minutes, 
+        base_dir=base_dir,
+        protocol=protocol,
+        fs_args=fs_args,
+        satellite=satellite,
+        sensor=sensor,
+        product_level=product_level,
+        product=product,
+        sector=sector,
+        filter_parameters=filter_parameters,
+    )
                 
     # Find previous files 
-    fpath_dict = find_previous_files(
+    # - Dictionary if return_list=True, otherwise a dictionary
+    fpaths = find_previous_files(
         N = N, 
-        check_consistency=check_consistency,
         start_time=latest_time,
         include_start_time=True, 
         base_dir=base_dir,
@@ -684,9 +687,12 @@ def find_latest_files(
         product=product,
         sector=sector,
         filter_parameters=filter_parameters,
+        operational_checks=operational_checks,
+        check_consistency=check_consistency,
         connection_type=connection_type,
+        return_list=return_list,
     )
-    return fpath_dict
+    return fpaths
 
 
 def find_previous_files(
@@ -703,7 +709,9 @@ def find_previous_files(
     protocol="file",
     fs_args={},
     include_start_time=False,
+    operational_checks=True,
     check_consistency=True,
+    return_list=False,
 ):
     """
     Find files for N timesteps previous to start_time.
@@ -718,13 +726,6 @@ def find_previous_files(
     include_start_time: bool, optional
         Wheter to include (and count) start_time in the N returned timesteps.
         The default is False.
-    check_consistency : bool, optional
-        Check for consistency of the returned files. The default is True.
-        It check that:
-         - start_time correspond exactly to the start_time of the files;
-         - the regularity of the previous timesteps, with no missing timesteps;
-         - the regularity of the scan mode, i.e. not switching from M3 to M6,
-         - if sector == M, the mesoscale domains are not changing within the considered period.
     base_dir : str, optional
         This argument must be specified only if searching files on the local storage 
         when protocol="file". 
@@ -764,7 +765,18 @@ def find_previous_files(
         The type of connection to a cloud bucket.
         This argument applies only if working with cloud buckets (base_dir is None).
         See `goes_api.available_connection_types` for implemented solutions.
-
+    operational_checks: bool, optional 
+        If True, it checks that:
+        1. the file comes from the GOES Operational system Real-time (OR) environment
+        2. the scan mode is fixed (for ABI)
+        4. the time period between start_time and end_time is fully covered, 
+            without missing acquisitions.
+    check_consistency : bool, optional
+        Check for consistency of the returned files. The default is True.
+        It check that:
+         - start_time correspond exactly to the start_time of the files;
+         - if sector == M, the mesoscale domains are not changing within the considered period.
+         
     Returns
     -------
     fpath_dict : dict
@@ -791,6 +803,7 @@ def find_previous_files(
         filter_parameters=filter_parameters,
     )
     # Check start_time is the precise start_time of the file
+    # - TODO: --> operational checks !
     if check_consistency and closest_time != start_time:
         raise ValueError(
             f"start_time='{start_time}' is not an actual start_time. "
@@ -816,6 +829,7 @@ def find_previous_files(
         filter_parameters=filter_parameters,
         group_by_key="start_time",
         connection_type=connection_type,
+        operational_checks=operational_checks,
         verbose=False,
     )
     # List previous datetime
@@ -838,18 +852,15 @@ def find_previous_files(
     # ----------------------------------------------------------
     # Perform consistency checks
     if check_consistency:
-        # Check constant scan_mode
-        _check_unique_scan_mode(fpath_dict, sensor)
-        # Check for interval regularity
-        if not include_start_time: 
-            list_datetime = list_datetime + [closest_time]
-        _check_interval_regularity(list_datetime)
         # TODO Check for Mesoscale same location (on M1 and M2 separately) !
         # - raise information when it changes !
         if sector == "M":
             pass
     # ----------------------------------------------------------
-    # Return files dictionary
+    # If return_list=True, return list of filepaths (instead of a dictionary)
+    if return_list: 
+        fpaths = list(fpath_dict.values())[0]
+        return fpaths
     return fpath_dict
 
 
@@ -867,7 +878,9 @@ def find_next_files(
     protocol="file",
     fs_args={},
     include_start_time=False,
+    operational_checks=True,
     check_consistency=True,
+    return_list=False,
 ):
     """
     Find files for N timesteps after start_time.
@@ -882,13 +895,6 @@ def find_next_files(
     include_start_time: bool, optional
         Wheter to include (and count) start_time in the N returned timesteps.
         The default is False.
-    check_consistency : bool, optional
-        Check for consistency of the returned files. The default is True.
-        It check that:
-         - start_time correspond exactly to the start_time of the files;
-         - the regularity of the previous timesteps, with no missing timesteps;
-         - the regularity of the scan mode, i.e. not switching from M3 to M6,
-         - if sector == M, the mesoscale domains are not changing within the considered period.
     base_dir : str, optional
         This argument must be specified only if searching files on the local storage 
         when protocol="file". 
@@ -928,6 +934,17 @@ def find_next_files(
         The type of connection to a cloud bucket.
         This argument applies only if working with cloud buckets (base_dir is None).
         See `goes_api.available_connection_types` for implemented solutions.
+    operational_checks: bool, optional 
+        If True, it checks that:
+        1. the file comes from the GOES Operational system Real-time (OR) environment
+        2. the scan mode is fixed (for ABI)
+        4. the time period between start_time and end_time is fully covered, 
+            without missing acquisitions.
+    check_consistency : bool, optional
+        Check for consistency of the returned files. The default is True.
+        It check that:
+         - start_time correspond exactly to the start_time of the files;
+         - if sector == M, the mesoscale domains are not changing within the considered period.
 
     Returns
     -------
@@ -980,6 +997,7 @@ def find_next_files(
         filter_parameters=filter_parameters,
         group_by_key="start_time",
         connection_type=connection_type,
+        operational_checks=operational_checks,
         verbose=False,
     )
     # List previous datetime
@@ -1001,16 +1019,13 @@ def find_next_files(
     # ----------------------------------------------------------
     # Perform consistency checks
     if check_consistency:
-        # Check constant scan_mode
-        _check_unique_scan_mode(fpath_dict, sensor)
-        # Check for interval regularity
-        if not include_start_time: 
-            list_datetime = list_datetime + [closest_time]
-        _check_interval_regularity(list_datetime)
         # TODO Check for Mesoscale same location (on M1 and M2 separately) !
         # - raise information when it changes !
         if sector == "M":
             pass
     # ----------------------------------------------------------
-    # Return files dictionary
+    # If return_list=True, return list of filepaths (instead of a dictionary)
+    if return_list: 
+        fpaths = list(fpath_dict.values())[0]
+        return fpaths
     return fpath_dict

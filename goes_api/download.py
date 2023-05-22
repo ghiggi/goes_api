@@ -86,7 +86,7 @@ def remove_corrupted_files(local_fpaths, bucket_fpaths, fs, return_corrupted_fpa
     for local_fpath, bucket_fpath in zip(local_fpaths, bucket_fpaths):
         local_exists = os.path.isfile(local_fpath)
         if local_exists:
-            bucket_size = fs.info(bucket_fpath)["Size"]
+            bucket_size = fs.info(bucket_fpath)["size"]
             local_size = os.path.getsize(local_fpath)
             if bucket_size != local_size:
                 os.remove(local_fpath)
@@ -259,7 +259,7 @@ def download_files(
     fs_args={},
 ):
     """
-    Donwload files from a cloud bucket storage.
+    Download files from a cloud bucket storage.
 
     Parameters
     ----------
@@ -466,7 +466,7 @@ def download_closest_files(
     base_dir=None,
 ):
     """
-    Donwload files from a cloud bucket storage closest to the specified time.
+    Download files from a cloud bucket storage closest to the specified time.
 
     Parameters
     ----------
@@ -578,9 +578,10 @@ def download_latest_files(
     verbose=True,
     fs_args={},
     base_dir=None,
+    return_list=False,
 ):
     """
-    Donwload latest available files from a cloud bucket storage.
+    Download latest available files from a cloud bucket storage.
 
     Parameters
     ----------
@@ -647,7 +648,7 @@ def download_latest_files(
     # Checks
     _check_download_protocol(protocol)
     # Get closest time
-    latest_time = find_latest_start_time(
+    latest_start_time = find_latest_start_time(
         look_ahead_minutes=look_ahead_minutes,
         base_dir=None,
         protocol=protocol,
@@ -663,7 +664,7 @@ def download_latest_files(
     fpaths = download_previous_files(
         N = N, 
         check_consistency=check_consistency,
-        start_time=latest_time,
+        start_time=latest_start_time,
         include_start_time=True,
         base_dir=base_dir,
         protocol=protocol,
@@ -678,6 +679,7 @@ def download_latest_files(
         force_download=force_download,
         check_data_integrity=check_data_integrity,
         verbose=verbose,
+        return_list=return_list,
     )
     return fpaths
 
@@ -701,9 +703,10 @@ def download_previous_files(
     verbose=True,
     fs_args={},
     base_dir=None,
+    return_list=False,
 ):
     """
-    Donwload files for N timesteps previous to start_time.
+    Download files for N timesteps previous to start_time.
 
     Parameters
     ----------
@@ -812,9 +815,10 @@ def download_previous_files(
         check_data_integrity=check_data_integrity,
         verbose=verbose,
     )
-    # Group files by start_time
-    fpaths_dict = group_files(fpaths, key="start_time")
-    return fpaths_dict
+    # If return_list=False, group files by start_time
+    if not return_list:
+        fpaths = group_files(fpaths, key="start_time")
+    return fpaths
 
 
 def download_next_files(
@@ -836,9 +840,10 @@ def download_next_files(
     verbose=True,
     fs_args={},
     base_dir=None,
+    return_list=False,
 ):
     """
-    Donwload files for N timesteps after start_time.
+    Download files for N timesteps after start_time.
 
     Parameters
     ----------
@@ -945,9 +950,10 @@ def download_next_files(
         check_data_integrity=check_data_integrity,
         verbose=verbose,
     )
-    # Group files by start_time
-    fpaths_dict = group_files(fpaths, key="start_time")
-    return fpaths_dict
+    # If return_list=False, group files by start_time
+    if not return_list:
+        fpaths = group_files(fpaths, key="start_time")
+    return fpaths
 
 
 ####---------------------------------------------------------------------------.
@@ -970,7 +976,7 @@ def download_monthly_files(
     base_dir=None,
 ): 
     """
-    Donwload monthly files from a cloud bucket storage.
+    Download monthly files from a cloud bucket storage.
 
     Parameters
     ----------
@@ -1067,7 +1073,7 @@ def download_daily_files(
     base_dir=None,
     ): 
     """
-    Donwload daily files from a cloud bucket storage.
+    Download daily files from a cloud bucket storage.
 
     Parameters
     ----------
