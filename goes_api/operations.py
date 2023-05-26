@@ -64,6 +64,13 @@ def ensure_fixed_scan_mode(fpaths):
         raise ValueError(msg)
         
 
+def _raise_missing_data_error(missing_intervals, product): 
+    error_message = f"Missing {product} data between:\n"
+    for start_tt, end_tt in missing_intervals:
+        error_message += f"[{start_tt} - {end_tt}]\n"
+    raise ValueError(error_message)
+    
+    
 def _ensure_not_missing_abi_acquisitions(fpaths, sector, product=''):
     """Check that there are not missing ABI acquisitions. 
     
@@ -84,12 +91,9 @@ def _ensure_not_missing_abi_acquisitions(fpaths, sector, product=''):
            missing_intervals.append((file_end_times[i], file_start_times[i+1]))
 
     if missing_intervals:
-       error_message = f"Missing {product} data between:\n"
-       for start_tt, end_tt in missing_intervals:
-           error_message += f"[{start_tt} - {end_tt}]\n"
-       raise ValueError(error_message)
+        _raise_missing_data_error(missing_intervals, product)
       
-        
+    
 def _ensure_not_missing_acquisitions(fpaths, product=''):
     """Check that there are not missing acquisitions. 
     
@@ -106,11 +110,9 @@ def _ensure_not_missing_acquisitions(fpaths, product=''):
        if timedeltas[i] > min_dt:
            missing_intervals.append((file_end_times[i], file_start_times[i+1]))
     if missing_intervals:
-       error_message = f"Missing {product} data between:\n"
-       for start_tt, end_tt in missing_intervals:
-           error_message += f"[{start_tt} - {end_tt}]\n"
-       raise ValueError(error_message)
-       
+        if missing_intervals:
+            _raise_missing_data_error(missing_intervals, product)
+                   
        
 def ensure_time_period_is_covered(fpaths, start_time, end_time, product=''):
     """Ensure the time period between the specified start_time and end_time is covered.
@@ -120,10 +122,10 @@ def ensure_time_period_is_covered(fpaths, start_time, end_time, product=''):
     # Check if there is at least 1 file
     if len(fpaths) == 0: 
         raise ValueError(f"Any {product} data available along the entire [{start_time}, {end_time}] period.")
-    # Retrieve infos 
-    product = get_key_from_filepaths(fpaths[0], "product")
-    sector = get_key_from_filepaths(fpaths[0], "sector")
-    sensor = get_key_from_filepaths(fpaths[0], "sensor")
+    # Retrieve infos (assume unique)
+    product = get_key_from_filepaths(fpaths[0], "product")[0]
+    sector = get_key_from_filepaths(fpaths[0], "sector")[0]
+    sensor = get_key_from_filepaths(fpaths[0], "sensor")[0]
     # Retrieve available file start_time and end_time
     file_start_times = np.unique(get_key_from_filepaths(fpaths, "start_time"))
     file_end_times = np.unique(get_key_from_filepaths(fpaths, "end_time"))
