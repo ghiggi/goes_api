@@ -5,8 +5,6 @@ Created on Tue Mar 22 11:04:53 2022
 
 @author: ghiggi
 """
-#------------------------------------------------------------------------------.
-
 # -----------------------------------------------------------------------------.
 ### Colab Tutorials 
 # https://colab.research.google.com/drive/1RkS4HpbVUtNZ6UQm4-bvEQpp7jXXB3lJ?usp=sharing#scrollTo=u0kc-GmGRUIl
@@ -66,11 +64,11 @@ Created on Tue Mar 22 11:04:53 2022
 #------------------------------------------------------------------------------.
 ### Check consistency
 # - Check for Mesoscale same location (on M1 and M2 separately) !
-#   - FindFiles raise information when it changes !
-# _check_unique_scan_mode: raise information when it changes
-# _check_interval_regularity: raise info when missing between ... and ...
+
 # --> Deal with mesoscale at 30 seconds? Now grouped within minutes? Maybe do not set seconds to 0?
-# --> With check_consistency_False it download/find but then grouped within minute keys
+# --> With operational_checks_False it download/find but then grouped within minute keys
+
+# TODO: utility to search when scan_mode changes
 
 #------------------------------------------------------------------------------.
 ### Optimize kerchunk utils
@@ -137,5 +135,6 @@ def _attrs_2_coords(ds, attrs):
 ### VECTORIZE: Create contours shapefiles from raster grid
 # - Grid --> Contours --> Shapefile (--> Tracking)
 # https://github.com/daniellelosos/GOES-R_NetCDF_to_Shapefile/blob/main/Continuous%20variable%20to%20contour%20to%20shapefile.ipynb
+
 # - Binary Grid --> Shapefile 
 # https://github.com/daniellelosos/GOES-R_NetCDF_to_Shapefile/blob/main/Discrete%20variable%20to%20shapefile.ipynb

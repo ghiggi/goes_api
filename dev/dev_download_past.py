@@ -56,7 +56,7 @@ check_data_integrity = True
 N=5
 
 include_start_time=False
-check_consistency=True
+operational_checks=True
 
 return_fpaths = True
 verbose = True
@@ -80,7 +80,7 @@ fpaths = download_previous_files(
     start_time=time,
     N=5,
     include_start_time=False,
-    check_consistency=True,
+    operational_checks=True,
     base_dir=base_dir,
     protocol=protocol,
     fs_args=fs_args,
@@ -103,7 +103,7 @@ fpaths = download_next_files(
     start_time=time,
     N=5,
     include_start_time=True,
-    check_consistency=True,
+    operational_checks=True,
     base_dir=base_dir,
     protocol=protocol,
     fs_args=fs_args,

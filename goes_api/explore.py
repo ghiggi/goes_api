@@ -26,7 +26,27 @@ from goes_api.checks import (
 from goes_api.io import _get_product_name, _dt_to_year_doy_hour
 
 
-def open_directory_explorer(satellite, protocol="s3", base_dir=None):
+def _get_sat_explorer_path(protocol, satellite, base_dir=None):
+    """Return the path to the satellite directory."""
+    if protocol == "s3":
+        satellite = satellite.replace("-", "")  # goes16
+        path = f"https://noaa-{satellite}.s3.amazonaws.com/index.html" 
+    elif protocol == "gcs":
+        # goes-16
+        path = f"https://console.cloud.google.com/storage/browser/gcp-public-data-{satellite}"
+    elif protocol in ["file", "local"]:
+        # Get default local directory if not specified
+        base_dir = get_goes_base_dir(base_dir)
+        path = os.path.join(base_dir, satellite)
+    else:
+        raise NotImplementedError(
+            "Current available protocols are ['gcs','s3','local']"
+        )
+    return path 
+
+
+      
+def open_explorer(satellite, protocol="s3", base_dir=None):
     """Open the cloud bucket / local explorer into a webpage.
 
     Parameters
@@ -45,26 +65,11 @@ def open_directory_explorer(satellite, protocol="s3", base_dir=None):
         the GOES-API config file.
     """
     satellite = _check_satellite(satellite)
-    if protocol == "s3":
-        satellite = satellite.replace("-", "")  # goes16
-        fpath = f"https://noaa-{satellite}.s3.amazonaws.com/index.html"
-        webbrowser.open(fpath, new=1)
-    elif protocol == "gcs":
-        # goes-16
-        fpath = f"https://console.cloud.google.com/storage/browser/gcp-public-data-{satellite}"
-        webbrowser.open(fpath, new=1)
-    elif protocol in ["file", "local"]:
-        # Get default local directory if not specified
-        base_dir = get_goes_base_dir(base_dir)
-        # Open storage explorer
-        webbrowser.open(os.path.join(base_dir, satellite))
-    else:
-        raise NotImplementedError(
-            "Current available protocols are 'gcs', 's3', 'local'."
-        )
+    path = _get_sat_explorer_path(protocol=protocol, satellite=satellite, base_dir=base_dir)
+    webbrowser.open(path, new=1)
+    
 
-
-def open_hourly_directory_explorer(
+def open_explorer_dir(
     satellite, 
     sensor, 
     product_level, 
@@ -73,7 +78,7 @@ def open_hourly_directory_explorer(
     sector=None, 
     protocol="s3", base_dir=None
     ):
-    """Open the cloud bucket / local exlorer at an hourly directory into a webpage.
+    """Open the cloud bucket / local exlorer at the doy-hourly directory into a webpage.
 
     Parameters
     ----------
@@ -111,24 +116,19 @@ def open_hourly_directory_explorer(
                                      product_level=product_level, 
                                      product=product, 
                                      sector=sector) 
+    path = _get_sat_explorer_path(protocol=protocol, satellite=satellite, base_dir=base_dir)      
     if protocol == "s3":
-        satellite = satellite.replace("-", "")  # goes16
-        fpath = f"https://noaa-goes16.s3.amazonaws.com/index.html#{product_name}/{year}/{doy}/{hour}/"
-        webbrowser.open(fpath, new=1)
+        fpath = path + f"#{product_name}/{year}/{doy}/{hour}/" 
     elif protocol == "gcs":
-        # goes-16
-        fpath = f"https://console.cloud.google.com/storage/browser/gcp-public-data-{satellite}/{product_name}/{year}/{doy}/{hour}"
-        webbrowser.open(fpath, new=1)
+        fpath = path + f"/{product_name}/{year}/{doy}/{hour}"  
     elif protocol in ["file", "local"]:
-        # Get default local directory if not specified
-        base_dir = get_goes_base_dir(base_dir)
-        # Open storage explorer
-        webbrowser.open(os.path.join(base_dir, satellite, product_name, year, doy, hour))
+        fpath = os.path.join(path, product_name, year, doy, hour)
     else:
         raise NotImplementedError(
             "Current available protocols are 'gcs', 's3', 'local'."
         )
-       
+    webbrowser.open(fpath, new=1)
+    
 
 def open_abi_channel_guide(channel):
     """Open ABI QuickGuide of the channel.

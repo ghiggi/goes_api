@@ -53,12 +53,16 @@ def ensure_data_availability(fpaths, sensor=None, product=None, start_time=None,
 
 @_ensure_fpaths_list  
 def ensure_fixed_scan_mode(fpaths): 
+    """Check fixed scan mode for ABI products."""
     scan_modes = get_key_from_filepaths(fpaths, "scan_mode")
     scan_modes = np.unique(scan_modes)
     if len(scan_modes) != 1:
-        raise ValueError(f"During the specified time period the following scan modes occured: {scan_modes}")
+        start_time = min(np.unique(get_key_from_filepaths(fpaths, "start_time")))
+        end_time = max(np.unique(get_key_from_filepaths(fpaths, "end_time")))
+        msg =  f"Multiple scan modes ({scan_modes}) occur between {start_time} and {end_time} !"
+        print(msg)
+        raise ValueError(msg)
         
-
 
 def _ensure_not_missing_abi_acquisitions(fpaths, sector, product=''):
     """Check that there are not missing ABI acquisitions. 

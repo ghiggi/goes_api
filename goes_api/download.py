@@ -569,7 +569,7 @@ def download_latest_files(
     sector=None,
     filter_parameters={},
     N = 1, 
-    check_consistency=True,
+    operational_checks=True,
     look_ahead_minutes=30, 
     n_threads=20,
     force_download=False,
@@ -591,12 +591,12 @@ def download_latest_files(
     N : int
         The number of last timesteps for which to download the files.
         The default is 1.
-    check_consistency : bool, optional
-        Check for consistency of the returned files. The default is True.
-        It check that:
-         - the regularity of the previous timesteps, with no missing timesteps;
-         - the regularity of the scan mode, i.e. not switching from M3 to M6,
-         - if sector == M, the mesoscale domains are not changing within the considered period.
+    operational_checks: bool, optional 
+        If True, it checks that:
+        1. the file comes from the GOES Operational system Real-time (OR) environment
+        2. the scan mode is fixed (for ABI)
+        4. the time period between start_time and end_time is fully covered, 
+            without missing acquisitions.
     protocol : str
         String specifying the cloud bucket storage from which to retrieve
         the data.
@@ -663,7 +663,7 @@ def download_latest_files(
     # Download files
     fpaths = download_previous_files(
         N = N, 
-        check_consistency=check_consistency,
+        operational_checks=operational_checks,
         start_time=latest_start_time,
         include_start_time=True,
         base_dir=base_dir,
@@ -695,7 +695,7 @@ def download_previous_files(
     sector=None,
     filter_parameters={},
     include_start_time=False,
-    check_consistency=True,
+    operational_checks=True,
     n_threads=20,
     force_download=False,
     check_data_integrity=True,
@@ -712,20 +712,19 @@ def download_previous_files(
     ----------
     start_time : datetime
         The start_time from which to search for previous files.
-        The start_time should correspond exactly to file start_time if check_consistency=True
+        The start_time should correspond exactly to file start_time if operational_checks=True
     N : int
         The number of previous timesteps for which to download the files.
     include_start_time: bool, optional
         Wheter to include (and count) start_time in the N timesteps for which
         file are downloaded.
         The default is False.
-    check_consistency : bool, optional
-        Check for consistency of the returned files. The default is True.
-        It check that:
-         - start_time correspond exactly to the start_time of the files;
-         - the regularity of the previous timesteps, with no missing timesteps;
-         - the regularity of the scan mode, i.e. not switching from M3 to M6,
-         - if sector == M, the mesoscale domains are not changing within the considered period.
+    operational_checks: bool, optional 
+        If True, it checks that:
+        1. the file comes from the GOES Operational system Real-time (OR) environment.
+        2. the scan mode is fixed (for ABI).
+        3. the start_time is the precise start_time of the file.
+        4. there not missing acquisitions between start_time and the previous N.
     protocol : str
         String specifying the cloud bucket storage from which to retrieve
         the data.
@@ -782,7 +781,7 @@ def download_previous_files(
         start_time=start_time,
         N=N, 
         include_start_time=include_start_time,
-        check_consistency=check_consistency,
+        operational_checks=operational_checks,
         protocol=protocol,
         fs_args=fs_args,
         satellite=satellite,
@@ -832,7 +831,7 @@ def download_next_files(
     sector=None,
     filter_parameters={},
     include_start_time=False,
-    check_consistency=True,
+    operational_checks=True,
     n_threads=20,
     force_download=False,
     check_data_integrity=True,
@@ -849,19 +848,18 @@ def download_next_files(
     ----------
     start_time : datetime
         The start_time from which search for next files.
-        The start_time should correspond exactly to file start_time if check_consistency=True
+        The start_time should correspond exactly to file start_time if operational_checks=True
     N : int
         The number of next timesteps for which to retrieve the files.
     include_start_time: bool, optional
         Wheter to include (and count) start_time in the N returned timesteps.
         The default is False.
-    check_consistency : bool, optional
-        Check for consistency of the returned files. The default is True.
-        It check that:
-         - start_time correspond exactly to the start_time of the files;
-         - the regularity of the previous timesteps, with no missing timesteps;
-         - the regularity of the scan mode, i.e. not switching from M3 to M6,
-         - if sector == M, the mesoscale domains are not changing within the considered period.
+    operational_checks: bool, optional 
+        If True, it checks that:
+        1. the file comes from the GOES Operational system Real-time (OR) environment
+        2. the scan mode is fixed (for ABI)
+        3. the start_time is the precise start_time of the file.
+        4. there not missing acquisitions between start_time and the future N.
     protocol : str
         String specifying the cloud bucket storage from which to retrieve
         the data.
@@ -918,7 +916,7 @@ def download_next_files(
         start_time=start_time,
         N=N,
         include_start_time=include_start_time,
-        check_consistency=check_consistency,
+        operational_checks=operational_checks,
         protocol=protocol,
         fs_args=fs_args,
         satellite=satellite,

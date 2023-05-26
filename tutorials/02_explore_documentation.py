@@ -16,10 +16,31 @@
 # goes_api. If not, see <http://www.gnu.org/licenses/>.
 
 import goes_api
+import datetime
 
-goes_api.open_directory_explorer(satellite="goes16", protocol="s3")
-goes_api.open_directory_explorer(satellite="goes16", protocol="gcs")
-goes_api.open_directory_explorer(satellite="goes16", base_dir="/ltenas3/data/")
+goes_api.open_explorer(satellite="goes16", protocol="s3")
+goes_api.open_explorer(satellite="goes16", protocol="gcs")
+goes_api.open_explorer(satellite="goes16", base_dir="/ltenas3/data/")
+
+
+protocol = "s3" 
+satellite = "goes-16"
+product = "ACHA"
+product_level = "L2"
+sensor = "ABI"
+sector = "F"
+time = datetime.datetime(2022, 3, 16, 15, 30)
+
+
+goes_api.open_explorer_dir(satellite=satellite,
+                           sensor=sensor,
+                           product_level=product_level,
+                           product=product,
+                           sector=sector,
+                           time=time, 
+                           protocol=protocol,
+                           )
+
 
 goes_api.open_abi_channel_guide("C01")
 goes_api.open_abi_product_guide("CTP")

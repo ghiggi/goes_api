@@ -96,14 +96,14 @@ start_time = find_closest_start_time(
 # 2. Define retrieval settings
 N = 5
 include_start_time = False
-check_consistency = True
+operational_checks = True
 
 # 3. Retrieve previous files
 fpaths = download_previous_files(
     start_time=start_time,
     N=N,
     include_start_time=include_start_time,
-    check_consistency=check_consistency,
+    operational_checks=operational_checks,
     base_dir=base_dir,
     protocol=protocol,
     fs_args=fs_args,
@@ -127,7 +127,7 @@ fpaths = download_next_files(
     start_time=start_time,
     N=N,
     include_start_time=include_start_time,
-    check_consistency=check_consistency,
+    operational_checks=operational_checks,
     base_dir=base_dir,
     protocol=protocol,
     fs_args=fs_args,
@@ -138,7 +138,7 @@ fpaths = download_next_files(
     sector=sector,
     filter_parameters=filter_parameters,
     n_threads=n_threads,
-    force_download=check_consistency,
+    force_download=operational_checks,
     check_data_integrity=True,
     progress_bar=True,
     verbose=True,
@@ -151,11 +151,11 @@ assert len(fpaths) == N
 #### Download latest files
 # - By default it retrieve just the last timestep available
 N = 2
-check_consistency = True
+operational_checks = True
 
 fpaths = download_latest_files(
     N=N,
-    check_consistency=check_consistency,
+    operational_checks=operational_checks,
     base_dir=base_dir,
     protocol=protocol,
     fs_args=fs_args,

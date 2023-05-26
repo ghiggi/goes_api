@@ -57,8 +57,8 @@ from goes_api.download import (
     download_monthly_files,
 )
 from goes_api.explore import (
-    open_directory_explorer,
-    open_hourly_directory_explorer,
+    open_explorer,
+    open_explorer_dir,
     open_abi_channel_guide,
     open_abi_product_guide,
 )
@@ -98,8 +98,8 @@ __all__ = [
     "ensure_regular_timesteps",
     "filter_files",
     "generate_kerchunk_files",
-    "open_directory_explorer",
-    "open_hourly_directory_explorer", 
+    "open_explorer",
+    "open_explorer_dir", 
     "open_abi_channel_guide",
     "open_abi_product_guide",
 ]

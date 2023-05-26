@@ -34,7 +34,7 @@ from .download import (
     download_previous_files,
 )
 from .explore import (
-    open_directory_explorer,
+    open_explorer,
     open_ABI_channel_guide,
     open_ABI_L2_product_guide,
 )
@@ -67,7 +67,7 @@ __all__ = [
     "find_closest_start_time",
     "find_latest_start_time",
     "generate_kerchunk_files",
-    "open_directory_explorer",
+    "open_explorer",
     "open_ABI_channel_guide",
     "open_ABI_L2_product_guide",
 ]

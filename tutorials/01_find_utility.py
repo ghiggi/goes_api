@@ -116,14 +116,14 @@ start_time = find_closest_start_time(
 # 2. Define retrieval settings
 N = 5
 include_start_time = False
-check_consistency = True
+operational_checks = True
 
 # 3. Retrieve previous files
 fpaths = find_previous_files(
     start_time=start_time,
     N=N,
     include_start_time=include_start_time,
-    check_consistency=check_consistency,
+    operational_checks=operational_checks,
     base_dir=base_dir,
     protocol=protocol,
     fs_args=fs_args,
@@ -142,7 +142,7 @@ fpaths = find_next_files(
     start_time=start_time,
     N=N,
     include_start_time=include_start_time,
-    check_consistency=check_consistency,
+    operational_checks=operational_checks,
     base_dir=base_dir,
     protocol=protocol,
     fs_args=fs_args,
@@ -161,11 +161,11 @@ assert len(fpaths) == N
 #### Find latest available files
 # - By default it retrieve just the last timestep available
 N = 2
-check_consistency = True
+operational_checks = True
 
 fpaths = find_latest_files(
     N=N,
-    check_consistency=check_consistency,
+    operational_checks=operational_checks,
     look_ahead_minutes=30,
     base_dir=base_dir,
     protocol=protocol,

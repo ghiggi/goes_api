@@ -7,7 +7,7 @@ Created on Thu Mar 24 14:54:31 2022
 """
 connection_type="https"
 N = 1
-check_consistency=True 
+operational_checks=True 
 look_ahead_minutes=30
 sector=None
 filter_parameters={}

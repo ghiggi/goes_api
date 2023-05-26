@@ -405,31 +405,3 @@ def _check_connection_type(connection_type, protocol):
         if connection_type not in valid_connection_type:
             raise ValueError(f"Valid `connection_type` are {valid_connection_type}.")
     return connection_type
-
-
-def _check_unique_scan_mode(fpath_dict, sensor):
-    """Check files have unique scan_mode validity."""
-    from goes_api.info import get_key_from_filepaths
-    
-    # TODO: raise information when it changes
-    if sensor == "ABI":
-        list_datetime = list(fpath_dict.keys())
-        fpaths_examplars = [fpath_dict[tt][0] for tt in list_datetime]
-        list_scan_modes = get_key_from_filepaths(fpaths_examplars, key="scan_mode")
-        list_scan_modes = np.unique(list_scan_modes).tolist()
-        if len(list_scan_modes) != 1:
-            raise ValueError(
-                f"There is a mixture of the following scan_mode: {list_scan_modes}."
-            )
-
-
-def _check_interval_regularity(list_datetime):
-    """Check regularity of a list of timesteps."""
-    # TODO: raise info when missing between ... and ...
-    if len(list_datetime) < 2:
-        return None
-    list_datetime = sorted(list_datetime)
-    list_timedelta = np.diff(list_datetime)
-    list_unique_timedelta = np.unique(list_timedelta)
-    if len(list_unique_timedelta) != 1:
-        raise ValueError("The time interval is not regular!")
