@@ -112,7 +112,7 @@ def _filter_file(
     if end_time is not None:
         file_start_time = info_dict.get("start_time")
         # If the file starts after end_time, do not select
-        if file_start_time > end_time:
+        if file_start_time >= end_time:
             return None
         # This would exclude a file with end_time within the file
         # if file_end_time > end_time:

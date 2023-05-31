@@ -173,6 +173,15 @@ def _check_product(product, sensor=None, product_level=None):
     return product_key
 
 
+def _round_datetime_to_nearest_minute(time):
+    """Round datetime time to nearest minute."""
+    # Add half a minute to the datetime object
+    rounded = time + datetime.timedelta(seconds=30)
+    # Truncate the seconds and microseconds
+    rounded = rounded.replace(second=0, microsecond=0)
+    return rounded
+
+
 def _check_time(time):
     """Check time validity."""
     if not isinstance(time, (datetime.datetime, datetime.date, np.datetime64, str)):
@@ -192,9 +201,9 @@ def _check_time(time):
         except ValueError:
             raise ValueError("The time string must have format 'YYYY-MM-DD hh:mm:ss'")
             
-    # Set resolution to minutes
-    # TODO: CONSIDER POSSIBLE MESOSCALE AT 30 SECS
-    time = time.replace(microsecond=0, second=0)
+    # Round resolution to minutes
+    # --> TODO: CONSIDER POSSIBLE MESOSCALE AT 30 SECS
+    time = _round_datetime_to_nearest_minute(time)
     return time
 
 
