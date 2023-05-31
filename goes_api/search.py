@@ -44,10 +44,11 @@ from goes_api.io import (
     _set_connection_type,
 )
 from goes_api.operations import (
-    ensure_operational_data,
     ensure_data_availability,
-    ensure_fixed_scan_mode,
-    ensure_time_period_is_covered,
+    # ensure_operational_data,
+    # ensure_data_availability,
+    # ensure_fixed_scan_mode,
+    # ensure_time_period_is_covered,
     ensure_all_files,
 )
 
@@ -78,8 +79,8 @@ def _enable_multiple_products(func):
         # Multiproduct case
         elif isinstance(kwargs['product'], list): 
             products = kwargs['product']
-            group_by_key = kwargs['group_by_key']
-            operational_checks = kwargs['operational_checks']
+            group_by_key = kwargs.get('group_by_key', None)
+            operational_checks = kwargs.get('operational_checks', True)
             list_fpaths = []
             for product in products:
                 new_kwargs = kwargs.copy()
@@ -265,18 +266,8 @@ def find_files(
     
     # Perform checks for operational routines
     if operational_checks:
-        # - Ensure that the file comes from the GOES Operational system Real-time (OR) environment
-        ensure_operational_data(fpaths)
-        # - Ensure data availability
         ensure_data_availability(fpaths, sensor=sensor, start_time=start_time, end_time=end_time, product=product)
-        # - Ensure fixed scan mode (for ABI)
-        ensure_fixed_scan_mode(fpaths)
-        # - Ensure time period covered 
-        ensure_time_period_is_covered(fpaths, start_time=start_time, end_time=end_time,product=product)
-        # - Ensure same number of files per timestep (i.e. for Rad)
-        # --> TODO: for ABI L1 and L2 Rad --> check 16 bands (or based on filter_params ... )
-        ensure_all_files(fpaths, product=product)
-    
+
     # Group fpaths by key
     if group_by_key:
         fpaths = group_files(fpaths, key=group_by_key)

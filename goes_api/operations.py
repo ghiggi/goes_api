@@ -155,7 +155,7 @@ def ensure_time_period_is_covered(fpaths, start_time, end_time, product=''):
 def ensure_all_files(fpaths, product=''):
     """Ensure same number of files for each timestep.
     
-    It cannot catch cases when a file is missing at every timestep.
+    It cannot catch cases when a file (i.e. ABI band) is missing at every timestep.
     """   
     # Retrieve fpath_dict
     fpaths_dict = group_files(fpaths, key="start_time")
@@ -166,3 +166,16 @@ def ensure_all_files(fpaths, product=''):
         raise ValueError(f"Missing {product} files across some timesteps.")
     return None  
 
+
+def ensure_fpaths_validity(fpaths, sensor, start_time, end_time, product):
+    # - Ensure that the file comes from the GOES Operational system Real-time (OR) environment
+    ensure_operational_data(fpaths)
+    # - Ensure data availability (there are some data)
+    ensure_data_availability(fpaths, sensor=sensor, start_time=start_time, end_time=end_time, product=product)
+    # - Ensure fixed scan mode (for ABI)
+    ensure_fixed_scan_mode(fpaths)
+    # - Ensure time period covered 
+    ensure_time_period_is_covered(fpaths, start_time=start_time, end_time=end_time,product=product)
+    # - Ensure same number of files per timestep (i.e. for Rad)
+    # --> TODO: for ABI L1 and L2 Rad --> check 16 bands (or based on filter_params ... )
+    ensure_all_files(fpaths, product=product)
