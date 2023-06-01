@@ -26,6 +26,7 @@ def _ensure_fpaths_list(func):
         return result 
     return inner
 
+
 ####--------------------------------------------------------------------------.
 #### Operational checking tools 
 
@@ -48,7 +49,7 @@ def ensure_data_availability(fpaths, sensor=None, product=None, start_time=None,
         if sensor is None or product is None or start_time is None or end_time is None:
             raise ValueError("No data available.")
         else:
-            raise ValueError(f"No {sensor} {product} data available between {start_time} and {end_time} !")
+            raise ValueError(f"The {product} data between {start_time} and {end_time} are not available.")
 
 
 @_ensure_fpaths_list  

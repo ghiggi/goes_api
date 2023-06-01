@@ -44,12 +44,12 @@ from goes_api.io import (
     _set_connection_type,
 )
 from goes_api.operations import (
-    ensure_data_availability,
+    ensure_fpaths_validity,
+    ensure_all_files,
     # ensure_operational_data,
     # ensure_data_availability,
     # ensure_fixed_scan_mode,
     # ensure_time_period_is_covered,
-    ensure_all_files,
 )
 
 ####--------------------------------------------------------------------------.
@@ -266,7 +266,7 @@ def find_files(
     
     # Perform checks for operational routines
     if operational_checks:
-        ensure_data_availability(fpaths, sensor=sensor, start_time=start_time, end_time=end_time, product=product)
+        ensure_fpaths_validity(fpaths, sensor=sensor, start_time=start_time, end_time=end_time, product=product)
 
     # Group fpaths by key
     if group_by_key:
