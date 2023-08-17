@@ -16,9 +16,9 @@
 # goes_api. If not, see <http://www.gnu.org/licenses/>.
 """Define functions to retrieve ABI fixed grid AreaDefinition."""
 
-# from pyresample import AreaDefinition
 import xarray as xr 
-from pyresample_dev.utils_swath import * # temporary hack
+# from pyresample import AreaDefinition
+from gpm_geo.pyresample_dev.utils_swath import AreaDefinition 
 
 
 def get_abi_shape(sector, resolution):
