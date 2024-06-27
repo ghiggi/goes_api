@@ -23,8 +23,9 @@ BUCKET_PROTOCOLS = ["gcs", "s3"]
 
 
 _satellites = {
-    "goes-16": ["16", "G16", "GOES-16", "GOES16", "EAST", "GOES-EAST"],
-    "goes-17": ["17", "G17", "GOES-17", "GOES17", "WEST", "GOES-WEST"],
+    "goes-16": ["16", "G16", "GOES-16", "GOES16"],
+    "goes-17": ["17", "G17", "GOES-17", "GOES17"],
+    "goes-18": ["18", "G18", "GOES-18", "GOES18"],
 }
 
 
