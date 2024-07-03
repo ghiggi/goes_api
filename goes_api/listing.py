@@ -138,8 +138,7 @@ PRODUCTS = {
 GLOB_FNAME_PATTERN = {
     "ABI": {
         "L1b": "{system_environment:2s}_{sensor:3s}-{product_level:s}-{product:3s}{scene_abbr:s}-{scan_mode:2s}{channel:3s}_{platform_shortname:3s}_s{start_time:%Y%j%H%M%S%f}_e{end_time:%Y%j%H%M%S%f}_c{creation_time:%Y%j%H%M%S%f}.nc{nc_version}",
-        # ABI_L1B_pattern = '{system_environment:2s}_{sensor:3s}-L1b-{observation_type:3s}{scene_abbr:s}-{scan_mode:2s}C01_{platform_shortname:3s}_s{start_time:%Y%j%H%M%S%f}_e{end_time:%Y%j%H%M%S%f}_c{creation_time:%Y%j%H%M%S%f}_{suffix}.nc{nc_version}'
-        "L2": "{system_environment:2s}_{sensor:3s}-{product_level:s}-{product_scene_abbr}-{scan_mode:s}_{platform_shortname:3s}_s{start_time:%Y%j%H%M%S%f}_e{end_time:%Y%j%H%M%S%f}_c{creation_time:%Y%j%H%M%S%f}.nc",
+        "L2":  "{system_environment:2s}_{sensor:3s}-{product_level:s}-{product_scene_abbr}-{scan_mode:s}_{platform_shortname:3s}_s{start_time:%Y%j%H%M%S%f}_e{end_time:%Y%j%H%M%S%f}_c{creation_time:%Y%j%H%M%S%f}.nc",
         # L2 CMIP product will have channels info within scan_mode
     },
     "GLM": {

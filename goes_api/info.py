@@ -427,7 +427,7 @@ def _get_info_from_filename(fname):
             scan_mode = scan_mode_channels[0:3]
             channels = scan_mode_channels[3:]
             info_dict["scan_mode"] = scan_mode
-            info_dict["channels"] = channels
+            info_dict["channel"] = channels
             
     # Special treatment for ABI products to retrieve sector 
     if sensor == 'ABI':
