@@ -421,13 +421,13 @@ def _get_info_from_filename(fname):
         info_dict["product"] = product
         info_dict["scene_abbr"] = scene_abbr
         del info_dict["product_scene_abbr"]
-        # Special treatment for CMIP to extract channels
+        # Special treatment for CMIP to extract channel
         if product == "CMIP":
-            scan_mode_channels = info_dict["scan_mode"]
-            scan_mode = scan_mode_channels[0:3]
-            channels = scan_mode_channels[3:]
+            scan_mode_channel = info_dict["scan_mode"]
+            scan_mode = scan_mode_channel[0:3]
+            channel = scan_mode_channel[3:]
             info_dict["scan_mode"] = scan_mode
-            info_dict["channel"] = channels
+            info_dict["channel"] = channel
             
     # Special treatment for ABI products to retrieve sector 
     if sensor == 'ABI':
