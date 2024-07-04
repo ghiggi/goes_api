@@ -424,8 +424,8 @@ def _get_info_from_filename(fname):
         # Special treatment for CMIP to extract channel
         if product == "CMIP":
             scan_mode_channel = info_dict["scan_mode"]
-            scan_mode = scan_mode_channel[0:3]
-            channel = scan_mode_channel[3:]
+            scan_mode = scan_mode_channel[0:2]
+            channel = scan_mode_channel[2:]
             info_dict["scan_mode"] = scan_mode
             info_dict["channel"] = channel
             
