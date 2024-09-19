@@ -408,10 +408,6 @@ def _get_info_from_filename(fname):
     assert sensor == info_dict['sensor']
     assert product_level == info_dict['product_level']
     
-    # Round start_time and end_time to minute resolution
-    info_dict["start_time"] =  _round_datetime_to_nearest_minute(info_dict["start_time"]) 
-    info_dict["end_time"] =  _round_datetime_to_nearest_minute(info_dict["end_time"]) 
-
     # Special treatment for ABI L2 products
     if info_dict.get("product_scene_abbr") is not None:
         # Identify scene_abbr
@@ -428,6 +424,13 @@ def _get_info_from_filename(fname):
             channel = scan_mode_channel[2:]
             info_dict["scan_mode"] = scan_mode
             info_dict["channel"] = channel
+        
+    # Round start time 
+    # - ABI to minutes ? (TODO: how to deal with 30s mesoscale !)
+    # - GLM to seconds
+    if info_dict["product"] == "ABI":
+        info_dict["start_time"] =  _round_datetime_to_nearest_minute(info_dict["start_time"]) 
+        info_dict["end_time"] =  _round_datetime_to_nearest_minute(info_dict["end_time"]) 
             
     # Special treatment for ABI products to retrieve sector 
     if sensor == 'ABI':

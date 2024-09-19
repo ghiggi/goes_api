@@ -123,11 +123,13 @@ def ensure_time_period_is_covered(fpaths, start_time, end_time, product=''):
     # Check if there is at least 1 file
     if len(fpaths) == 0: 
         raise ValueError(f"Any {product} data available along the entire [{start_time}, {end_time}] period.")
-    # Retrieve infos (assume unique)
+    # Retrieve product and sensor infos (assuming single one)
     product = get_key_from_filepaths(fpaths[0], "product")[0]
-    sector = get_key_from_filepaths(fpaths[0], "sector")[0]
     sensor = get_key_from_filepaths(fpaths[0], "sensor")[0]
-    # Retrieve available file start_time and end_time
+    if sensor == "ABI": 
+        sector = get_key_from_filepaths(fpaths[0], "sector")[0]
+    # Retrieve available file start_time and end_time 
+    # - ABI: minutes resolution required, GLM: seconds resolutions required (TODO !)
     file_start_times = np.unique(get_key_from_filepaths(fpaths, "start_time"))
     file_end_times = np.unique(get_key_from_filepaths(fpaths, "end_time"))
     #-----------------------------------------------
