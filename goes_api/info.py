@@ -296,7 +296,7 @@ def available_group_keys():
         "scene_abbr",  # ["F", "C", "M1", "M2"]
         "scan_mode",  # ["M3", "M4", "M6"]
         "channel",  # C**
-        "platform_shortname",  # G16, G17
+        "platform_shortname",  # G16, G17, G18, G19
         "start_time",
         "end_time",
     ]
@@ -316,10 +316,16 @@ def infer_satellite_from_path(path):
     """Infer the satellite from the file path."""
     goes16_patterns = ['goes16', 'goes-16', 'G16']
     goes17_patterns = ['goes17', 'goes-17', 'G17'] 
+    goes18_patterns = ['goes18', 'goes-18', 'G18'] 
+    goes19_patterns = ['goes19', 'goes-19', 'G19'] 
     if np.any([pattern in path for pattern in goes16_patterns]):
         return 'goes-16'
     if np.any([pattern in path for pattern in goes17_patterns]):
         return 'goes-17'
+    if np.any([pattern in path for pattern in goes18_patterns]):
+        return 'goes-18'
+    if np.any([pattern in path for pattern in goes19_patterns]):
+        return 'goes-19'
     else:
         raise ValueError("Unexpected GOES file path.")
         
@@ -361,6 +367,10 @@ def _infer_satellite(fpath):
         return 'GOES-16'
     elif '_G17_-' in fname: 
         return 'GOES-17'
+    elif '_G18_-' in fname: 
+        return 'GOES-18'
+    elif '_G19_-' in fname: 
+        return 'GOES-19'
     else: 
         raise ValueError(f"`satellite` could not be inferred from {fname}.")
 
@@ -448,6 +458,8 @@ def _get_info_from_filename(fname):
         satellite = 'GOES-17'
     elif 'G18' == platform_shortname:
          satellite = 'GOES-18'
+    elif 'G19' == platform_shortname:
+         satellite = 'GOES-19'
     else:
         raise ValueError(f"Processing of satellite {platform_shortname} not yet implemented.")
     info_dict["satellite"] =  satellite  
