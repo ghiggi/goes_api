@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 # Copyright (c) 2022 Ghiggi Gionata
 
@@ -15,15 +14,16 @@
 # You should have received a copy of the GNU General Public License along with
 # goes_api. If not, see <http://www.gnu.org/licenses/>.
 
-import goes_api
 import datetime
+
+import goes_api
 
 goes_api.open_explorer(satellite="goes16", protocol="s3")
 goes_api.open_explorer(satellite="goes16", protocol="gcs")
 goes_api.open_explorer(satellite="goes16", base_dir="/ltenas3/data/")
 
 
-protocol = "s3" 
+protocol = "s3"
 satellite = "goes-16"
 product = "ACHA"
 product_level = "L2"
@@ -32,14 +32,15 @@ sector = "F"
 time = datetime.datetime(2022, 3, 16, 15, 30)
 
 
-goes_api.open_explorer_dir(satellite=satellite,
-                           sensor=sensor,
-                           product_level=product_level,
-                           product=product,
-                           sector=sector,
-                           time=time, 
-                           protocol=protocol,
-                           )
+goes_api.open_explorer_dir(
+    satellite=satellite,
+    sensor=sensor,
+    product_level=product_level,
+    product=product,
+    sector=sector,
+    time=time,
+    protocol=protocol,
+)
 
 
 goes_api.open_abi_channel_guide("C01")

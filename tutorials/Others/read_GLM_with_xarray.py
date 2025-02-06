@@ -1,16 +1,14 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
 Created on Thu Mar 24 14:33:48 2022
 
 @author: ghiggi
 """
-import requests
-import cartopy
-import cartopy.crs as ccrs
-import xarray as xr
 from io import BytesIO
-import matplotlib.pyplot as plt
+
+import requests
+import xarray as xr
+
 from goes_api import find_latest_files
 
 ###---------------------------------------------------------------------------.
@@ -26,10 +24,10 @@ fs_args = {}
 satellite = "GOES-16"
 sensor = "GLM"
 product_level = "L2"
-product = "LCFA"   
+product = "LCFA"
 
-#----------------------------------------------------------------------------.
-#### Open file using in-memory buffering via https requests  
+# ----------------------------------------------------------------------------.
+#### Open file using in-memory buffering via https requests
 fpaths = find_latest_files(
     look_ahead_minutes=30,
     protocol=protocol,
@@ -44,13 +42,11 @@ fpaths = find_latest_files(
 fpath = list(fpaths.values())[0][0]
 print(fpath)
 
-# - Open the dataset 
+# - Open the dataset
 resp = requests.get(fpath)
 f_obj = BytesIO(resp.content)
 ds = xr.open_dataset(f_obj)
 ds.title
 
-#----------------------------------------------------------------------------.
-# Use GLMTOOLS package for additional processing 
-
- 
+# ----------------------------------------------------------------------------.
+# Use GLMTOOLS package for additional processing

@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
-# Copyright (c) 2022 Ghiggi Gionata 
+# Copyright (c) 2022 Ghiggi Gionata
 
 # goes_api is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software
@@ -16,34 +15,33 @@
 # goes_api. If not, see <http://www.gnu.org/licenses/>.
 """Define filtering filepaths functions."""
 
-from goes_api.info import _get_info_from_filepath
 from goes_api.checks import (
-     _check_channels,
-     _check_scene_abbr,
-     _check_start_end_time,
-     _check_product_level,
-     _check_sensor,
-     _check_scan_modes,
+    _check_channels,
+    _check_product_level,
+    _check_scan_modes,
+    _check_scene_abbr,
+    _check_sensor,
+    _check_start_end_time,
 )
+from goes_api.info import _get_info_from_filepath
 
 # TODO: enable also filtering by product !
 
 
-def _ensure_list_if_str(x): 
-    if x is None: 
+def _ensure_list_if_str(x):
+    if x is None:
         return x
-    if isinstance(x, str): 
-        return [x] 
+    if isinstance(x, str):
+        return [x]
     if isinstance(x, list):
-        return x 
-    else: 
-        raise TypeError("Not expected.")
-    
-        
+        return x
+    raise TypeError("Not expected.")
+
+
 def _filter_file(
     fpath,
     sensor=None,
-    product_level=None, 
+    product_level=None,
     start_time=None,
     end_time=None,
     scan_modes=None,
@@ -57,25 +55,25 @@ def _filter_file(
     scan_modes = _ensure_list_if_str(scan_modes)
     channels = _ensure_list_if_str(channels)
     scene_abbr = _ensure_list_if_str(scene_abbr)
-    
+
     # Get info from filepath
     info_dict = _get_info_from_filepath(fpath)
 
-    # Filter by sensor 
+    # Filter by sensor
     if sensor is not None:
-       
+
         file_sensor = info_dict.get("sensor")
         if file_sensor is not None:
-            if file_sensor not in sensor: 
+            if file_sensor not in sensor:
                 return None
-    
-    # Filter by product level 
+
+    # Filter by product level
     if product_level is not None:
         file_product_level = info_dict.get("product_level")
         if file_product_level is not None:
-            if file_product_level not in product_level: 
+            if file_product_level not in product_level:
                 return None
-            
+
     # Filter by channels
     if channels is not None:
         file_channel = info_dict.get("channel")
@@ -96,13 +94,13 @@ def _filter_file(
         if file_scene_abbr is not None:
             if file_scene_abbr not in scene_abbr:
                 return None
-    
+
     # Filter by start_time
     if start_time is not None:
         # If the file ends before start_time, do not select
         # - Do not use <= because mesoscale data can have start_time=end_time at min resolution
         file_end_time = info_dict.get("end_time")
-        if file_end_time < start_time: 
+        if file_end_time < start_time:
             return None
         # This would exclude a file with start_time within the file
         # if file_start_time < start_time:
@@ -136,8 +134,8 @@ def _filter_files(
     fpaths = [
         _filter_file(
             fpath,
-            sensor=sensor, 
-            product_level=product_level, 
+            sensor=sensor,
+            product_level=product_level,
             start_time=start_time,
             end_time=end_time,
             scan_modes=scan_modes,
@@ -153,7 +151,7 @@ def _filter_files(
 def filter_files(
     fpaths,
     sensor=None,
-    product_level=None, 
+    product_level=None,
     start_time=None,
     end_time=None,
     scan_modes=None,

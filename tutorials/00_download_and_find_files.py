@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 # Copyright (c) 2022 Ghiggi Gionata
 
@@ -16,6 +15,7 @@
 # goes_api. If not, see <http://www.gnu.org/licenses/>.
 
 import datetime
+
 import goes_api
 from goes_api import download_files, find_files, group_files
 
@@ -63,7 +63,7 @@ end_time = datetime.datetime(2020, 7, 8, 0, 0)
 sector = "F"
 scene_abbr = None  # DO NOT SPECIFY FOR FULL DISC SECTOR
 scan_modes = None  # select all scan modes (M3, M4, M6)
-channels = None    # select all channels
+channels = None  # select all channels
 filter_parameters = {}
 filter_parameters["scan_modes"] = scan_modes
 filter_parameters["channels"] = channels
@@ -113,7 +113,7 @@ assert fpaths == l_fpaths
 ###---------------------------------------------------------------------------.
 #### Group filepaths by key (i.e. start_time)
 goes_api.available_group_keys()
-fpath_dict = group_files(fpaths,  key="start_time")
+fpath_dict = group_files(fpaths, key="start_time")
 print(fpath_dict)
 
 # Alternatively specify the group_by_key args in find_files

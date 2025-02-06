@@ -6,7 +6,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "goes_api"
-description = "Python API for downloading and searching GOES-16/17 satellite data on local and cloud storage."
+description = "Python API for downloading and searching GOES-16/17/18/19 satellite data on local and cloud storage."
 readme = "README.md"
 authors = [
 	{ name = "Gionata Ghiggi", email = "gionata.ghiggi@epfl.ch" },
@@ -46,7 +46,7 @@ keywords = [
     ]
 dependencies = [
     "numpy",
-    "pandas", 
+    "pandas",
     "tqdm",
     "trollsift",
     "fsspec",
@@ -64,7 +64,7 @@ full = ["satpy",
 	"dask",
 	"ujson"]
 dev = ["pre-commit", "black", "ruff",
-       "pytest", "pytest-cov", 
+       "pytest", "pytest-cov",
        "pip-tools", "bumpver", "twine",
        "setuptools>=61.0.0", "wheel",
        "build", "twine",
@@ -84,61 +84,26 @@ write_to = "goes_api/_version.py"
 
 [tool.setuptools]
 license-files = ["LICENSE"]
-packages = ["goes_api"] # explicitly list the packages in modules
 
-[tool.isort]
-profile = "black"
-skip_gitignore = true
-multi_line_output = 3
-line_length = 100
-skip = [".tox", ".venv", "build", "dist"]
+[tool.setuptools.packages.find]
+include = ["goes_api*"]
 
-[tool.black]
-line-length = 100
-# skip-string-normalization = true
-target-version = [
-    "py37",
-    "py38",
-    "py39",
-    "py310",
-    "py311",
+[tool.pytest.ini_options]
+minversion = "7"
+addopts = "-ra --strict-config --strict-markers --cov --cov-report term-missing --cov-report xml --cov-report lcov:lcov.info --check-max-report=10"
+xfail_strict = true
+# filterwarnings = ["error"]
+log_cli_level = "info"
+testpaths = [
+  "goes_api/tests",
 ]
-
-[tool.pylint]
-    [tool.pylint.main]
-    extension-pkg-whitelist = [
-        "numpy",
-        "scipy",
-    ]
-    ignore = "_version.py"
-    load-plugins = [
-        "pylint.extensions.no_self_use",
-    ]
-
-    [tool.pylint.message_control]
-    disable = [
-        "R0801",
-    ]
-
-    [tool.pylint.reports]
-    output-format = "colorized"
-
-    [tool.pylint.design]
-    max-args = 20
-    max-locals = 50
-    max-branches = 30
-    max-statements = 80
-    max-attributes = 25
-    max-public-methods = 75
 
 [tool.coverage]
     [tool.coverage.run]
     source = ["goes_api"]
     omit = [
-        "*dev*",
         "*docs*",
         "*tutorials*",
-        "*tests*",
     ]
 
     [tool.coverage.report]
@@ -148,13 +113,164 @@ target-version = [
         "def __str__",
     ]
 
+[tool.isort]
+profile = "black"
+skip_gitignore = true
+multi_line_output = 3
+line_length = 100
+skip = [".tox", ".venv", "build", "dist"]
 
+[tool.black]
+line-length = 120
+# skip-string-normalization = true
+target-version = [
+    "py39",
+    "py310",
+    "py311",
+]
 
+[tool.ruff]
+line-length = 120
+indent-width = 4
 
+# Addional file to be formatted by ruff (in addition to *py)
+extend-include = ["*.ipynb"]
 
+# Exclude a variety of commonly ignored directories.
+exclude = [
+    ".bzr",
+    ".direnv",
+    ".eggs",
+    ".git",
+    ".hg",
+    ".mypy_cache",
+    ".nox",
+    ".pants.d",
+    ".pytype",
+    ".ruff_cache",
+    ".svn",
+    ".tox",
+    ".venv",
+    "__pypackages__",
+    "_build",
+    "buck-out",
+    "build",
+    "docs",
+    "dist",
+    "node_modules",
+    "venv",
+    "tutorials",
+]
 
+[tool.ruff.format]
+# Enable reformatting of code snippets in docstrings.
+docstring-code-format = true
 
- 
-   
+[tool.ruff.lint]
+select = [
+    # pydocstyle
+    "D",
+    # Pyflakes
+    "F",
+    # pycodestyle
+    "E",
+    "W",
+    # isort
+    "I",
+    # pyupgrade
+    "UP",
+    # flake8-quotes
+    "Q",
+    # flake8-bugbear
+    "B",
+    # flake8-return
+    "RET",
+    # flake8-unused-arguments
+    "ARG",
+    # flake8-raise
+    "RSE",
+    # flake8-pytest-style
+    "PT",
+    # flake8-simplify
+    "SIM",
+    # Perflint
+    "PERF",
+    # pandas-vet
+    "PD",
+    # pylint
+    "PL",
+    # flake8-commas
+    "COM",
+    # flake8-slots
+    "SLOT",
+    # flake8-comprehensions
+    "C4",
+    # Ruff custom rules
+    "RUF",
+    # NumPy-specific rules  (for 2.0)
+    "NPY",
+    #---------------------
+    #### Future rules ####
+    # flake8-use-pathlib
+    # "PTH",
+    # refurb
+    # "FURB", # require preview
 
- 
+]
+ignore = [
+    "E722",
+    "B904",
+    "B006", # {} defaults in function arguments
+    "PT011", # pytest raised error must be checked if match the expected error msg
+    "PERF203",
+    # "PD011", # suggest values --> to_numpy
+    "PD901",
+    "PD013", # suggest melt instead of stack
+    "PLW2901",
+    "PLW0603",
+    "RUF012",
+    "RUF015",
+    "RET504",
+    # Docstyle Rules
+    "D404", # Docstring can't start with "This"
+    "D401", # First sentence must be in imperative mood
+    "D100", "D101","D102", "D103", "D104", "D105",  # Missing docstrings
+    # Complexity rules
+    "PLR0913", # restrict max number of function argument
+    "PLR2004",
+    "PLR0912",
+    "PLR0915",
+]
+
+# Allow autofix for all enabled rules (when `--fix`) is provided.
+fixable = ["ALL"]
+unfixable = []
+
+[tool.ruff.lint.pydocstyle]
+convention = "numpy"
+
+[tool.ruff.lint.per-file-ignores]
+# Ignore `E402` (import violations) in all Jupyter Notebooks.
+"*.ipynb" = ["E402"]
+# Rules to ignore in test files
+"test_*.py" = [
+    "ARG",  # avoid problems with fixtures
+    "D100", "D101","D102", "D103", "D104", "D105",  # Missing docstrings
+]
+"setup.py" = ["D100"]
+"*__init__.py" = ["D104"]
+
+[tool.doc8]
+ignore-path = [
+    "docs/build",
+    "docs/api/generated",
+    "docs/_templates",
+    "docs/tutorials",
+    "docs/examples",
+]
+file-encoding = "utf8"
+max-line-length = 120
+ignore = ["D001"]
+
+[tool.codespell]
+ignore-words-list = "ges,nd"

@@ -21,7 +21,6 @@ def _write_yaml_file(dictionary, fpath, sort_keys=False):
     """Write dictionary to YAML file."""
     with open(fpath, "w") as f:
         yaml.dump(dictionary, f, sort_keys=sort_keys)
-    return
 
 
 def define_goes_api_configs(base_dir: str):
@@ -40,10 +39,10 @@ def define_goes_api_configs(base_dir: str):
     used for authentication when making GOES-API requests.
 
     """
-    # TODO: 
-    # - add preferred cloud protocol 
-    # - add other fs cloud options 
-    
+    # TODO:
+    # - add preferred cloud protocol
+    # - add other fs cloud options
+
     config_dict = {}
     config_dict["base_dir"] = base_dir
 
@@ -57,7 +56,6 @@ def define_goes_api_configs(base_dir: str):
     _write_yaml_file(config_dict, fpath, sort_keys=False)
 
     print("The GOES-API config file has been written successfully!")
-    return
 
 
 def read_goes_api_configs() -> Dict[str, str]:
@@ -86,7 +84,7 @@ def read_goes_api_configs() -> Dict[str, str]:
     fpath = os.path.join(home_directory, ".config_goes_api.yml")
     if not os.path.exists(fpath):
         raise ValueError(
-            "The GOES-API config file has not been specified. Use goes_api.define_configs to specify it !"
+            "The GOES-API config file has not been specified. Use goes_api.define_configs to specify it !",
         )
     # Read the GOES-API config file
     config_dict = _read_yaml_file(fpath)
@@ -104,6 +102,3 @@ def _get_config_key(key, value=None):
 def get_goes_base_dir(base_dir=None):
     """Return the GOES base directory."""
     return _get_config_key(key="base_dir", value=base_dir)
-
-
- 

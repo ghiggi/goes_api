@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 # Copyright (c) 2022 Ghiggi Gionata
 
@@ -16,9 +15,11 @@
 # goes_api. If not, see <http://www.gnu.org/licenses/>.
 
 import subprocess
+
 import fsspec
 from satpy import Scene
 from satpy.readers import FSFile
+
 from goes_api import find_latest_files
 
 ###---------------------------------------------------------------------------.
@@ -88,4 +89,4 @@ new_scn.save_datasets(filename="/tmp/{name}.png")
 ###---------------------------------------------------------------------------.
 # Use the ImageMagick command montage to join all the images together
 cmd = "montage /tmp/C*.png -geometry 256x256 -background black /tmp/goes-imager_nc_mosaic.jpg"
-subprocess.run(cmd, shell=True)
+subprocess.run(cmd, shell=True, check=False)

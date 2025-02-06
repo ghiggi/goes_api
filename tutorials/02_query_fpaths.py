@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 # Copyright (c) 2022 Ghiggi Gionata
 
@@ -16,6 +15,7 @@
 # goes_api. If not, see <http://www.gnu.org/licenses/>.
 
 import datetime
+
 import goes_api.query
 from goes_api import (
     find_files,
@@ -79,8 +79,8 @@ fpaths = find_files(
 
 print(fpaths)
 ####---------------------------------------------------------------------------.
-#### Query filepaths 
-# - List of filepaths 
+#### Query filepaths
+# - List of filepaths
 goes_api.query.start_time(fpaths)
 goes_api.query.end_time(fpaths)
 goes_api.query.system_environment(fpaths)
@@ -93,8 +93,8 @@ goes_api.query.channel(fpaths)
 goes_api.query.platform_shortname(fpaths)
 goes_api.query.satellite(fpaths)
 
-# - Dictionary with list of filepaths 
-fpaths_dict =  group_files(fpaths, key="start_time")
+# - Dictionary with list of filepaths
+fpaths_dict = group_files(fpaths, key="start_time")
 print(fpaths_dict)
 goes_api.query.start_time(fpaths_dict)
 goes_api.query.end_time(fpaths_dict)
@@ -108,5 +108,3 @@ goes_api.query.channel(fpaths_dict)
 goes_api.query.platform_shortname(fpaths_dict)
 goes_api.query.satellite(fpaths_dict)
 goes_api.query.system_environment(fpaths_dict)
-
- 

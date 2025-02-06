@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
 Created on Tue Apr 26 12:13:15 2022
 
@@ -8,6 +7,7 @@ Created on Tue Apr 26 12:13:15 2022
 import fsspec
 from satpy import Scene
 from satpy.readers import FSFile
+
 from goes_api import find_latest_files
 
 ###---------------------------------------------------------------------------.
@@ -77,5 +77,6 @@ scn.load(scn.available_dataset_names())
 ####---------------------------------------------------------------------------.
 #### Get pixel scan time array
 from goes_api.abi_pixel_time import get_ABI_pixel_time
-da_pixel_time = get_ABI_pixel_time(scn['C01'])
+
+da_pixel_time = get_ABI_pixel_time(scn["C01"])
 print(da_pixel_time)

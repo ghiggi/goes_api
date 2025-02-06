@@ -1,0 +1,18 @@
+name: goes_api
+channels: [conda-forge]
+dependencies:
+  - numpy
+  - pandas
+  - tqdm
+  - trollsift
+  - fsspec
+  - s3fs
+  - gcsfs
+  - xarray
+  - zarr
+  - netcdf4
+  - pytest
+  - pytest-cov
+  - pytest-mock
+  - pytest-sugar
+

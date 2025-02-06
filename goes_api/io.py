@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 # Copyright (c) 2022 Ghiggi Gionata
 
@@ -16,12 +15,13 @@
 # goes_api. If not, see <http://www.gnu.org/licenses/>.
 """Define filesystems, buckets, connection types and directory structures"""
 
+import datetime
 import os
-import fsspec
-import datetime 
-import pandas as pd 
 
- 
+import fsspec
+import pandas as pd
+
+
 def get_filesystem(protocol, fs_args={}):
     """
     Define ffspec filesystem.
@@ -43,19 +43,16 @@ def get_filesystem(protocol, fs_args={}):
         _ = fs_args.setdefault("anon", True)  # TODO: or if is empty
         fs = fsspec.filesystem("s3", **fs_args)
         return fs
-    elif protocol == "gcs":
+    if protocol == "gcs":
         # Set defaults
         # - Use the anonymous credentials to access public data
         _ = fs_args.setdefault("token", "anon")  # TODO: or if is empty
         fs = fsspec.filesystem("gcs", **fs_args)
         return fs
-    elif protocol in ["local", "file"]:
+    if protocol in ["local", "file"]:
         fs = fsspec.filesystem("file")
         return fs
-    else:
-        raise NotImplementedError(
-            "Current available protocols are 'gcs', 's3', 'local'."
-        )
+    raise NotImplementedError("Current available protocols are 'gcs', 's3', 'local'.")
 
 
 def get_bucket(protocol, satellite):
@@ -71,24 +68,24 @@ def get_bucket(protocol, satellite):
         The acronym of the satellite.
         Use `goes_api.available_satellites()` to retrieve the available satellites.
     """
-
     # Dictionary of bucket and urls
     bucket_dict = {
-        "gcs": "gs://gcp-public-data-{}".format(satellite),
+        "gcs": f"gs://gcp-public-data-{satellite}",
         "s3": "s3://noaa-{}".format(satellite.replace("-", "")),
         "oracle": os.path.join(
             "https://objectstorage.us-ashburn-1.oraclecloud.com/n/idcxvbiyd8fn/b/goes/o/",
             satellite,
         ),
         "adl": os.path.join(
-            "https://goeseuwest.blob.core.windows.net/noaa-", satellite
+            "https://goeseuwest.blob.core.windows.net/noaa-",
+            satellite,
         ),  # # EU west
         # "adl": os.path.join("https://goes.blob.core.windows.net/noaa-", satellite),  # East US subset
     }
     return bucket_dict[protocol]
 
 
-def _switch_to_https_fpath(fpath, protocol): 
+def _switch_to_https_fpath(fpath, protocol):
     """
     Switch bucket address with https address.
 
@@ -101,19 +98,19 @@ def _switch_to_https_fpath(fpath, protocol):
          the data. Use `goes_api.available_protocols()` to retrieve available protocols.
     """
     from goes_api.info import infer_satellite_from_path
-    
+
     # GCS note
     # https://storage.googleapis.com (download and byte connection)
     # https://storage.cloud.google.com (just download)
     satellite = infer_satellite_from_path(fpath)
     https_base_url_dict = {
-        "gcs": "https://storage.googleapis.com/gcp-public-data-{}".format(satellite),
+        "gcs": f"https://storage.googleapis.com/gcp-public-data-{satellite}",
         "s3": "https://noaa-{}.s3.amazonaws.com".format(satellite.replace("-", "")),
     }
     base_url = https_base_url_dict[protocol]
-    fpath = os.path.join(base_url, fpath.split("/", 3)[3])  
-    return fpath 
-    
+    fpath = os.path.join(base_url, fpath.split("/", 3)[3])
+    return fpath
+
 
 def _switch_to_https_fpaths(fpaths, protocol):
     """
@@ -140,22 +137,27 @@ def _get_bucket_prefix(protocol):
     elif protocol == "file":
         prefix = ""
     else:
-        raise NotImplementedError(
-            "Current available protocols are 'gcs', 's3', 'local'."
-        )
+        raise NotImplementedError("Current available protocols are 'gcs', 's3', 'local'.")
     return prefix
 
 
 def _get_product_name(sensor, product_level, product, sector):
     """Get bucket directory name of a product."""
-    if sensor=='ABI':
+    if sensor == "ABI":
         product_name = f"{sensor}-{product_level}-{product}{sector}"
-    else: 
+    else:
         product_name = f"{sensor}-{product_level}-{product}"
     return product_name
 
+
 def _get_product_dir(
-    satellite, sensor, product_level, product, sector, protocol=None, base_dir=None
+    satellite,
+    sensor,
+    product_level,
+    product,
+    sector,
+    protocol=None,
+    base_dir=None,
 ):
     """Get product (bucket) directory path."""
     if base_dir is None:
@@ -179,12 +181,10 @@ def _dt_to_year_doy_hour(dt):
 
 def _get_time_dir_tree(start_time, end_time):
     """Define the directory tree based on start and end times.
-    
+
     Pattern: YYYY/DOY/HH
     """
-    list_hourly_times = pd.date_range(start_time, 
-                                      end_time + datetime.timedelta(hours=1), 
-                                      freq="1h")
+    list_hourly_times = pd.date_range(start_time, end_time + datetime.timedelta(hours=1), freq="1h")
     list_year_doy_hour = [_dt_to_year_doy_hour(dt) for dt in list_hourly_times]
     list_dir_tree = ["/".join(tpl) for tpl in list_year_doy_hour]
     return list_dir_tree
@@ -211,18 +211,10 @@ def _set_connection_type(fpaths, satellite, protocol=None, connection_type=None)
             if connection_type == "nc_bytes":
                 fpaths = _add_nc_bytes(fpaths)
         if isinstance(fpaths, dict):
-            fpaths = {
-                tt: _switch_to_https_fpaths(l_fpaths, protocol=protocol)           
-                for tt, l_fpaths in fpaths.items()
-            }
+            fpaths = {tt: _switch_to_https_fpaths(l_fpaths, protocol=protocol) for tt, l_fpaths in fpaths.items()}
             if connection_type == "nc_bytes":
-                fpaths = {
-                    tt: _add_nc_bytes(l_fpaths) for tt, l_fpaths in fpaths.items()
-                }
+                fpaths = {tt: _add_nc_bytes(l_fpaths) for tt, l_fpaths in fpaths.items()}
         return fpaths
-    else:
-        raise NotImplementedError(
-            "'bucket','https', 'nc_bytes' are the only `connection_type` available."
-        )
-        
-    
+    raise NotImplementedError(
+        "'bucket','https', 'nc_bytes' are the only `connection_type` available.",
+    )

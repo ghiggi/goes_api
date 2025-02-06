@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
 Created on Tue Apr 26 10:22:39 2022
 
 @author: ghiggi
 """
 import xarray as xr
+
 from goes_api import find_latest_files
 
 ###---------------------------------------------------------------------------.
@@ -53,8 +53,9 @@ fpath = list(fpaths.values())[0][0]
 print(fpath)
 
 # - Open via bytesIO
-import requests
 from io import BytesIO
+
+import requests
 
 resp = requests.get(fpath)
 f_obj = BytesIO(resp.content)
@@ -63,10 +64,6 @@ ds = xr.open_dataset(f_obj)
 ####---------------------------------------------------------------------------.
 #### Get pixel scan time array
 from goes_api.abi_pixel_time import get_ABI_pixel_time
+
 da_pixel_time = get_ABI_pixel_time(ds)
 print(da_pixel_time)
-
-
-
-
- 

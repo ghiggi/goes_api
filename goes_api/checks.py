@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 # Copyright (c) 2022 Ghiggi Gionata
 
@@ -16,10 +15,12 @@
 # goes_api. If not, see <http://www.gnu.org/licenses/>.
 """Define functions checking goes_api inputs."""
 
-import os
 import datetime
+import os
+
 import numpy as np
-from goes_api.alias import PROTOCOLS, _satellites, _sectors, _channels
+
+from goes_api.alias import PROTOCOLS, _channels, _satellites, _sectors
 
 
 def _check_protocol(protocol):
@@ -71,12 +72,12 @@ def _check_satellite(satellite):
 def _check_sector(sector, sensor, product=None):
     """Check sector validity."""
     from goes_api.info import available_sectors
-    
-    if sector is None: 
+
+    if sector is None:
         if sensor == "ABI":
             raise ValueError("If sensor='ABI', `sector` must be specified!")
-        return sector 
-    if sector is not None and sensor != "ABI": 
+        return sector
+    if sector is not None and sensor != "ABI":
         raise ValueError("`sector`must be specified only for sensor='ABI'.")
     if not isinstance(sector, str):
         raise TypeError("`sector` must be a string.")
@@ -94,16 +95,14 @@ def _check_sector(sector, sensor, product=None):
     valid_sectors = available_sectors(product=product)
     if product is not None:
         if sector_key not in valid_sectors:
-            raise ValueError(
-                f"Valid sectors for product {product} are {valid_sectors}."
-            )
+            raise ValueError(f"Valid sectors for product {product} are {valid_sectors}.")
     return sector_key
 
 
 def _check_sensor(sensor):
     """Check sensor validity."""
     from goes_api.info import available_sensors
-    
+
     if not isinstance(sensor, str):
         raise TypeError("`sensor` must be a string.")
     valid_sensors = available_sensors()
@@ -124,7 +123,7 @@ def _check_sensors(sensors):
 def _check_product_level(product_level, product=None):
     """Check product_level validity."""
     from goes_api.info import get_dict_product_level_products
-    
+
     if not isinstance(product_level, str):
         raise TypeError("`product_level` must be a string.")
     product_level = product_level.capitalize()
@@ -133,7 +132,7 @@ def _check_product_level(product_level, product=None):
     if product is not None:
         if product not in get_dict_product_level_products()[product_level]:
             raise ValueError(
-                f"`product_level` '{product_level}' does not include product '{product}'."
+                f"`product_level` '{product_level}' does not include product '{product}'.",
             )
     return product_level
 
@@ -142,16 +141,14 @@ def _check_product_levels(product_levels):
     """Check product_levels validity."""
     if isinstance(product_levels, str):
         product_levels = [product_levels]
-    product_levels = [
-        _check_product_level(product_level) for product_level in product_levels
-    ]
+    product_levels = [_check_product_level(product_level) for product_level in product_levels]
     return product_levels
 
 
 def _check_product(product, sensor=None, product_level=None):
     """Check product validity."""
     from goes_api.info import available_products
-    
+
     if not isinstance(product, str):
         raise TypeError("`product` must be a string.")
     valid_products = available_products(sensors=sensor, product_levels=product_level)
@@ -164,12 +161,9 @@ def _check_product(product, sensor=None, product_level=None):
     if product_key is None:
         if sensor is None and product_level is None:
             raise ValueError(f"Available products: {valid_products}")
-        else:
-            sensor = "" if sensor is None else sensor
-            product_level = "" if product_level is None else product_level
-            raise ValueError(
-                f"Available {product_level} products for {sensor}: {valid_products}"
-            )
+        sensor = "" if sensor is None else sensor
+        product_level = "" if product_level is None else product_level
+        raise ValueError(f"Available {product_level} products for {sensor}: {valid_products}")
     return product_key
 
 
@@ -186,12 +180,11 @@ def _check_time(time):
     """Check time validity."""
     if not isinstance(time, (datetime.datetime, datetime.date, np.datetime64, str)):
         raise TypeError(
-            "Specify time with datetime.datetime objects or a "
-            "string of format 'YYYY-MM-DD hh:mm:ss'."
+            "Specify time with datetime.datetime objects or a " "string of format 'YYYY-MM-DD hh:mm:ss'.",
         )
     # If np.datetime, convert to datetime.datetime
     if isinstance(time, np.datetime64):
-        time = time.astype('datetime64[s]').tolist()
+        time = time.astype("datetime64[s]").tolist()
     # If datetime.date, convert to datetime.datetime
     if not isinstance(time, (datetime.datetime, str)):
         time = datetime.datetime(time.year, time.month, time.day, 0, 0, 0)
@@ -200,7 +193,7 @@ def _check_time(time):
             time = datetime.datetime.fromisoformat(time)
         except ValueError:
             raise ValueError("The time string must have format 'YYYY-MM-DD hh:mm:ss'")
-            
+
     # Round resolution to minutes
     # --> TODO: CONSIDER POSSIBLE MESOSCALE AT 30 SECS
     time = _round_datetime_to_nearest_minute(time)
@@ -227,8 +220,8 @@ def _check_start_end_time(start_time, end_time):
     # Check start_time is in the past
     if start_time > datetime.datetime.utcnow():
         raise ValueError("Provide a start_time occuring in the past.")
-        
-    # end_time must not be checked if wanting to search on latest file available ! 
+
+    # end_time must not be checked if wanting to search on latest file available !
     # if end_time > datetime.datetime.utcnow():
     #     raise ValueError("Provide a end_time occuring in the past.")
     return (start_time, end_time)
@@ -238,15 +231,15 @@ def _check_year_month(year, month):
     """Check year month validity."""
     # TODO: check before current date and after xxx for specific satellites
     _check_month(month)
-    _check_year(year) 
-    return year, month 
- 
-    
+    _check_year(year)
+    return year, month
+
+
 def _check_month(month):
     """Check month value."""
     if not isinstance(month, int):
         raise TypeError("'month' must be provided as an integer.")
-    if month < 1 or month > 12: 
+    if month < 1 or month > 12:
         raise ValueError("'month' value must be between 1 and 12.")
 
 
@@ -254,10 +247,10 @@ def _check_year(year):
     """Check year value."""
     if not isinstance(year, int):
         raise TypeError("'year' must be provided as an integer.")
-    current_year = datetime.datetime.now().year 
+    current_year = datetime.datetime.now().year
     if year > current_year:
         raise ValueError("'year' must not exceed current year.")
-        
+
 
 def _check_channel(channel):
     """Check channel validity."""
@@ -268,16 +261,15 @@ def _check_channel(channel):
     if channel in list(_channels.keys()):
         return channel
     # Retrieve channel key accounting for possible aliases
-    else:
-        channel_key = None
-        for key, possible_values in _channels.items():
-            if channel.upper() in possible_values:
-                channel_key = key
-                break
-        if channel_key is None:
-            valid_channels_key = list(_channels.keys())
-            raise ValueError(f"Available channels: {valid_channels_key}")
-        return channel_key
+    channel_key = None
+    for key, possible_values in _channels.items():
+        if channel.upper() in possible_values:
+            channel_key = key
+            break
+    if channel_key is None:
+        valid_channels_key = list(_channels.keys())
+        raise ValueError(f"Available channels: {valid_channels_key}")
+    return channel_key
 
 
 def _check_channels(channels=None, sensor=None):
@@ -296,7 +288,7 @@ def _check_channels(channels=None, sensor=None):
 def _check_scan_mode(scan_mode):
     """Check scan_mode validity."""
     from goes_api.info import available_scan_modes
-    
+
     if not isinstance(scan_mode, str):
         raise TypeError("`scan_mode` must be a string.")
     # Check channel follow standard name
@@ -304,8 +296,7 @@ def _check_scan_mode(scan_mode):
     valid_scan_modes = available_scan_modes()
     if scan_mode in valid_scan_modes:
         return scan_mode
-    else:
-        raise ValueError(f"Available `scan_mode`: {valid_scan_modes}")
+    raise ValueError(f"Available `scan_mode`: {valid_scan_modes}")
 
 
 def _check_scan_modes(scan_modes=None, sensor=None):
@@ -345,10 +336,10 @@ def _check_scene_abbr(scene_abbr, sensor=None, sector=None):
 
 def _check_system_environment(fpaths, value="OR"):
     """
-    The GOES system environment defines whether the data in the file 
+    The GOES system environment defines whether the data in the file
     are real-time, test, playback, or simulated data.
-    
-    Possible values: 
+
+    Possible values:
     “OR” = operational system real-time data
     “OT” = operational system test data
     “IR” = test system real-time data
@@ -358,8 +349,10 @@ def _check_system_environment(fpaths, value="OR"):
     """
     valid_values = ["OR", "OT", "IR", "IT", "IP", "IS"]
     if value not in valid_values:
-        raise ValueError(f"{value} is not a valid GOES system environment. Valid values are {valid_values}.")
-        
+        raise ValueError(
+            f"{value} is not a valid GOES system environment. Valid values are {valid_values}.",
+        )
+
 
 def _check_filter_parameters(filter_parameters, sensor, sector):
     """Check filter parameters validity.
@@ -377,7 +370,9 @@ def _check_filter_parameters(filter_parameters, sensor, sector):
         filter_parameters["channels"] = _check_channels(channels, sensor=sensor)
     if scene_abbr:
         filter_parameters["scene_abbr"] = _check_scene_abbr(
-            scene_abbr, sensor=sensor, sector=sector
+            scene_abbr,
+            sensor=sensor,
+            sector=sector,
         )
     return filter_parameters
 
@@ -385,15 +380,14 @@ def _check_filter_parameters(filter_parameters, sensor, sector):
 def _check_group_by_key(group_by_key):
     """Check group_by_key validity."""
     from goes_api.info import available_group_keys
-    
+
     if not isinstance(group_by_key, (str, type(None))):
         raise TypeError("`group_by_key`must be a string or None.")
     if group_by_key is not None:
         valid_group_by_key = available_group_keys()
         if group_by_key not in valid_group_by_key:
             raise ValueError(
-                f"{group_by_key} is not a valid group_by_key. "
-                f"Valid group_by_key are {valid_group_by_key}."
+                f"{group_by_key} is not a valid group_by_key. " f"Valid group_by_key are {valid_group_by_key}.",
             )
     return group_by_key
 

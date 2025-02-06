@@ -1,15 +1,16 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
 Created on Wed Mar 30 16:40:40 2022
 
 @author: ghiggi
 """
+from io import BytesIO
+
+import matplotlib.pyplot as plt
 import numpy as np
 import requests
 import xarray as xr
-import matplotlib.pyplot as plt 
-from io import BytesIO
+
 from goes_api import find_latest_files
 
 ###---------------------------------------------------------------------------.
@@ -25,21 +26,21 @@ fs_args = {}
 satellite = "GOES-16"
 sensor = "ABI"
 product_level = "L2"
-product = "TPW"     # 10 km at nadir 
+product = "TPW"  # 10 km at nadir
 
 ###---------------------------------------------------------------------------.
 #### Define sector and filtering options
 sector = "F"
-scan_modes = None   # select all scan modes (M3, M4, M6)
-channels = None     # select all channels
-scene_abbr = None   
+scan_modes = None  # select all scan modes (M3, M4, M6)
+channels = None  # select all channels
+scene_abbr = None
 filter_parameters = {}
 filter_parameters["scan_modes"] = scan_modes
 filter_parameters["channels"] = channels
 filter_parameters["scene_abbr"] = scene_abbr
 
-#----------------------------------------------------------------------------.
-#### Open file using in-memory buffering via https requests  
+# ----------------------------------------------------------------------------.
+#### Open file using in-memory buffering via https requests
 fpaths = find_latest_files(
     protocol=protocol,
     fs_args=fs_args,
@@ -55,19 +56,19 @@ fpaths = find_latest_files(
 fpath = list(fpaths.values())[0][0]
 print(fpath)
 
-# - Open the dataset 
+# - Open the dataset
 resp = requests.get(fpath)
 f_obj = BytesIO(resp.content)
 ds = xr.open_dataset(f_obj)
 print(ds)
 
-# - Dataset Name 
+# - Dataset Name
 print(ds.title)
 
 # - Dataset Resolution
-print(ds.attrs["spatial_resolution"]) # 10 km at nadir 
+print(ds.attrs["spatial_resolution"])  # 10 km at nadir
 
-# - Dataset Variables 
+# - Dataset Variables
 print(list(ds.data_vars))
 
 # - DQF values (excluded NaNs)
@@ -76,7 +77,7 @@ np.unique(ds["DQF_Retrieval"].data[~np.isnan(ds["DQF_Retrieval"].data)], return_
 np.unique(ds["DQF_Overall"].data[~np.isnan(ds["DQF_Overall"].data)], return_counts=True)
 
 # - Plot TPW field
-ds['TPW'].plot.imshow()
+ds["TPW"].plot.imshow()
 plt.show()
 
 # - Plot DQF

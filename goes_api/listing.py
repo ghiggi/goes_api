@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 # Copyright (c) 2022 Ghiggi Gionata
 
@@ -16,20 +15,23 @@
 # goes_api. If not, see <http://www.gnu.org/licenses/>.
 
 ABI_INTERVAL = {
-    'F': {'M3': 15,
-          'M6': 10,
-          'M4': 5, 
-          },
-    'C': {'M3': 5,
-         'M6': 5,
-         # 'M4': '', # not produced
-         },
-   'M': {'M3': 1,
-         'M6': 1,
-         # 'M4': '', # not produced      
-        },
+    "F": {
+        "M3": 15,
+        "M6": 10,
+        "M4": 5,
+    },
+    "C": {
+        "M3": 5,
+        "M6": 5,
+        # 'M4': '', # not produced
+    },
+    "M": {
+        "M3": 1,
+        "M6": 1,
+        # 'M4': '', # not produced
+    },
 }
-    
+
 ABI_L1_PRODUCTS = {
     "Rad": "Radiances",
 }
@@ -50,7 +52,7 @@ ABI_L2_PRODUCTS = {
     "CTP": "Cloud Top Pressure",  # only F, C
     "DMW": "Derived Motion Winds",
     "DMWV": "Derived Motion Winds (Clear Sky)",
-    "DSI": "Derived Stability Indices", 
+    "DSI": "Derived Stability Indices",
     "DSR": "Downward Shortwave Radiation",
     "FDC": "Fire/Hot Spot Characterization",
     "LSA": "Land Surface Albedo",
@@ -138,7 +140,7 @@ PRODUCTS = {
 GLOB_FNAME_PATTERN = {
     "ABI": {
         "L1b": "{system_environment:2s}_{sensor:3s}-{product_level:s}-{product:3s}{scene_abbr:s}-{scan_mode:2s}{channel:3s}_{platform_shortname:3s}_s{start_time:%Y%j%H%M%S%f}_e{end_time:%Y%j%H%M%S%f}_c{creation_time:%Y%j%H%M%S%f}.nc{nc_version}",
-        "L2":  "{system_environment:2s}_{sensor:3s}-{product_level:s}-{product_scene_abbr}-{scan_mode:s}_{platform_shortname:3s}_s{start_time:%Y%j%H%M%S%f}_e{end_time:%Y%j%H%M%S%f}_c{creation_time:%Y%j%H%M%S%f}.nc",
+        "L2": "{system_environment:2s}_{sensor:3s}-{product_level:s}-{product_scene_abbr}-{scan_mode:s}_{platform_shortname:3s}_s{start_time:%Y%j%H%M%S%f}_e{end_time:%Y%j%H%M%S%f}_c{creation_time:%Y%j%H%M%S%f}.nc",
         # L2 CMIP product will have channels info within scan_mode
     },
     "GLM": {

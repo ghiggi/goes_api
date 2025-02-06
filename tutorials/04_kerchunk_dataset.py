@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 # Copyright (c) 2022 Ghiggi Gionata
 
@@ -15,13 +14,14 @@
 # You should have received a copy of the GNU General Public License along with
 # goes_api. If not, see <http://www.gnu.org/licenses/>.
 
+import datetime
+
 import fsspec
 import ujson
-import datetime
 import xarray as xr
-from goes_api import find_files, generate_kerchunk_files
-
 from dask.distributed import Client
+
+from goes_api import find_files, generate_kerchunk_files
 
 client = Client(n_workers=20)
 client

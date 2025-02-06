@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
-# Copyright (c) 2022 Ghiggi Gionata 
+# Copyright (c) 2022 Ghiggi Gionata
 
 # goes_api is free software: you can redistribute it and/or modify it under the
 # terms of the GNU General Public License as published by the Free Software
@@ -15,18 +14,19 @@
 # You should have received a copy of the GNU General Public License along with
 # goes_api. If not, see <http://www.gnu.org/licenses/>.
 
-import os
 import datetime
+import os
+
 import numpy as np
 from trollsift import Parser
-from goes_api.checks import _check_group_by_key
+
 from goes_api.alias import (
     BUCKET_PROTOCOLS,
-    _satellites, 
-    _sectors,
     _channels,
+    _satellites,
+    _sectors,
 )
-
+from goes_api.checks import _check_group_by_key
 
 ####--------------------------------------------------------------------------.
 #### Dictionary retrievals
@@ -46,8 +46,8 @@ def get_available_online_product(protocol, satellite):
         The name of the satellite.
         Use `goes_api.available_satellites()` to retrieve the available satellites.
     """
-    from goes_api.io import get_filesystem, get_bucket
-        
+    from goes_api.io import get_bucket, get_filesystem
+
     # Get filesystem and bucket
     fs = get_filesystem(protocol)
     bucket = get_bucket(protocol, satellite)
@@ -57,10 +57,7 @@ def get_available_online_product(protocol, satellite):
     # Retrieve directories name
     list_dirname = [os.path.basename(f) for f in list_dir]
     # Remove sector letter for ABI folders
-    list_products = [
-        product[:-1] if product.startswith("ABI") else product
-        for product in list_dirname
-    ]
+    list_products = [product[:-1] if product.startswith("ABI") else product for product in list_dirname]
     list_products = np.unique(list_products).tolist()
     # Retrieve sensor, product_level and product list
     list_sensor_level_product = [product.split("-") for product in list_products]
@@ -83,8 +80,8 @@ def get_dict_info_products(sensors=None, product_levels=None):
     Specifying `sensors` and/or `product_levels` allows to retrieve only
     specific portions of the dictionary.
     """
-    from goes_api.listing import PRODUCTS
     from goes_api.checks import _check_product_levels, _check_sensors
+    from goes_api.listing import PRODUCTS
 
     if sensors is None and product_levels is None:
         return PRODUCTS
@@ -116,9 +113,7 @@ def get_dict_product_sensor(sensors=None, product_levels=None):
     specific subset of the dictionary.
     """
     # Get product listing dictionary
-    products_listing_dict = get_dict_info_products(
-        sensors=sensors, product_levels=product_levels
-    )
+    products_listing_dict = get_dict_info_products(sensors=sensors, product_levels=product_levels)
     # Retrieve dictionary
     products_sensor_dict = {}
     for sensor, product_level_dict in products_listing_dict.items():
@@ -135,9 +130,7 @@ def get_dict_sensor_products(sensors=None, product_levels=None):
     Specifying `sensors` and/or `product_levels` allows to retrieve only a
     specific subset of the dictionary.
     """
-    products_sensor_dict = get_dict_product_sensor(
-        sensors=sensors, product_levels=product_levels
-    )
+    products_sensor_dict = get_dict_product_sensor(sensors=sensors, product_levels=product_levels)
     sensor_product_dict = {}
     for k in set(products_sensor_dict.values()):
         sensor_product_dict[k] = []
@@ -154,9 +147,7 @@ def get_dict_product_product_level(sensors=None, product_levels=None):
     specific subset of the dictionary.
     """
     # Get product listing dictionary
-    products_listing_dict = get_dict_info_products(
-        sensors=sensors, product_levels=product_levels
-    )
+    products_listing_dict = get_dict_info_products(sensors=sensors, product_levels=product_levels)
     # Retrieve dictionary
     products_product_level_dict = {}
     for sensor, product_level_dict in products_listing_dict.items():
@@ -174,7 +165,8 @@ def get_dict_product_level_products(sensors=None, product_levels=None):
     specific subset of the dictionary.
     """
     products_product_level_dict = get_dict_product_product_level(
-        sensors=sensors, product_levels=product_levels
+        sensors=sensors,
+        product_levels=product_levels,
     )
     product_level_product_dict = {}
     for k in set(products_product_level_dict.values()):
@@ -211,19 +203,17 @@ def available_sectors(product=None):
     If `product` is specified, it returns the sectors available for such specific
     product.
     """
-    from goes_api.listing import ABI_L2_SECTOR_EXCEPTIONS
     from goes_api.checks import _check_product
+    from goes_api.listing import ABI_L2_SECTOR_EXCEPTIONS
 
     sectors_keys = list(_sectors.keys())
     if product is None:
         return sectors_keys
-    else:
-        product = _check_product(product)
-        specific_sectors = ABI_L2_SECTOR_EXCEPTIONS.get(product)
-        if specific_sectors is None:
-            return sectors_keys
-        else:
-            return specific_sectors
+    product = _check_product(product)
+    specific_sectors = ABI_L2_SECTOR_EXCEPTIONS.get(product)
+    if specific_sectors is None:
+        return sectors_keys
+    return specific_sectors
 
 
 def available_product_levels(sensors=None):
@@ -232,19 +222,15 @@ def available_product_levels(sensors=None):
     If `sensors` is specified, it returns the product levels available for
     the specified set of sensors.
     """
-
     from goes_api.listing import PRODUCTS
 
     if sensors is None:
         return ["L1b", "L2"]
-    else:
-        if isinstance(sensors, str):
-            sensors = [sensors]
-        product_levels = np.concatenate(
-            [list(PRODUCTS[sensor].keys()) for sensor in sensors]
-        )
-        product_levels = np.unique(product_levels).tolist()
-        return product_levels
+    if isinstance(sensors, str):
+        sensors = [sensors]
+    product_levels = np.concatenate([list(PRODUCTS[sensor].keys()) for sensor in sensors])
+    product_levels = np.unique(product_levels).tolist()
+    return product_levels
 
 
 def available_scan_modes():
@@ -279,9 +265,7 @@ def available_products(sensors=None, product_levels=None):
     specific subset of the list.
     """
     # Get product listing dictionary
-    products_dict = get_dict_product_sensor(
-        sensors=sensors, product_levels=product_levels
-    )
+    products_dict = get_dict_product_sensor(sensors=sensors, product_levels=product_levels)
     products = list(products_dict.keys())
     return products
 
@@ -292,7 +276,7 @@ def available_group_keys():
         "system_environment",
         "sensor",  # ABI
         "product_level",
-        "product",       # ...
+        "product",  # ...
         "scene_abbr",  # ["F", "C", "M1", "M2"]
         "scan_mode",  # ["M3", "M4", "M6"]
         "channel",  # C**
@@ -312,67 +296,63 @@ def available_connection_types():
 #### Information extraction from filepaths
 
 
-def infer_satellite_from_path(path): 
+def infer_satellite_from_path(path):
     """Infer the satellite from the file path."""
-    goes16_patterns = ['goes16', 'goes-16', 'G16']
-    goes17_patterns = ['goes17', 'goes-17', 'G17'] 
-    goes18_patterns = ['goes18', 'goes-18', 'G18'] 
-    goes19_patterns = ['goes19', 'goes-19', 'G19'] 
+    goes16_patterns = ["goes16", "goes-16", "G16"]
+    goes17_patterns = ["goes17", "goes-17", "G17"]
+    goes18_patterns = ["goes18", "goes-18", "G18"]
+    goes19_patterns = ["goes19", "goes-19", "G19"]
     if np.any([pattern in path for pattern in goes16_patterns]):
-        return 'goes-16'
+        return "goes-16"
     if np.any([pattern in path for pattern in goes17_patterns]):
-        return 'goes-17'
+        return "goes-17"
     if np.any([pattern in path for pattern in goes18_patterns]):
-        return 'goes-18'
+        return "goes-18"
     if np.any([pattern in path for pattern in goes19_patterns]):
-        return 'goes-19'
-    else:
-        raise ValueError("Unexpected GOES file path.")
-        
+        return "goes-19"
+    raise ValueError("Unexpected GOES file path.")
+
 
 def _infer_product_level(fpath):
     """Infer product_level from filepath."""
     fname = os.path.basename(fpath)
-    if '-L1b-' in fname: 
-        return 'L1b'
-    elif '-L2-' in fname: 
-        return 'L2'
-    else: 
-        raise ValueError(f"`product_level` could not be inferred from {fname}.")
+    if "-L1b-" in fname:
+        return "L1b"
+    if "-L2-" in fname:
+        return "L2"
+    raise ValueError(f"`product_level` could not be inferred from {fname}.")
 
 
 def _infer_sensor(fpath):
     """Infer sensor from filepath."""
     fname = os.path.basename(fpath)
-    if '_ABI-' in fname: 
-        return 'ABI'
-    elif '_EXIS-' in fname: 
-        return 'EXIS'
-    elif '_GLM-' in fname: 
-        return 'GLM'
-    elif '_MAG-' in fname: 
-        return 'MAG'
-    elif '_SEIS-' in fname: 
-        return 'SEIS'
-    elif '_SUVI-' in fname: 
-        return 'SUVI'
-    else: 
-        raise ValueError(f"`sensor` could not be inferred from {fname}.")
+    if "_ABI-" in fname:
+        return "ABI"
+    if "_EXIS-" in fname:
+        return "EXIS"
+    if "_GLM-" in fname:
+        return "GLM"
+    if "_MAG-" in fname:
+        return "MAG"
+    if "_SEIS-" in fname:
+        return "SEIS"
+    if "_SUVI-" in fname:
+        return "SUVI"
+    raise ValueError(f"`sensor` could not be inferred from {fname}.")
 
 
 def _infer_satellite(fpath):
     """Infer satellite from filepath."""
     fname = os.path.basename(fpath)
-    if '_G16_' in fname: 
-        return 'GOES-16'
-    elif '_G17_-' in fname: 
-        return 'GOES-17'
-    elif '_G18_-' in fname: 
-        return 'GOES-18'
-    elif '_G19_-' in fname: 
-        return 'GOES-19'
-    else: 
-        raise ValueError(f"`satellite` could not be inferred from {fname}.")
+    if "_G16_" in fname:
+        return "GOES-16"
+    if "_G17_-" in fname:
+        return "GOES-17"
+    if "_G18_-" in fname:
+        return "GOES-18"
+    if "_G19_-" in fname:
+        return "GOES-19"
+    raise ValueError(f"`satellite` could not be inferred from {fname}.")
 
 
 def _separate_product_scene_abbr(product_scene_abbr):
@@ -382,10 +362,10 @@ def _separate_product_scene_abbr(product_scene_abbr):
     if last_letter in ["1", "2"]:
         return product_scene_abbr[:-2], product_scene_abbr[-2:]
     # CONUS and Full Disc
-    elif last_letter in ["F", "C"]:
+    if last_letter in ["F", "C"]:
         return product_scene_abbr[:-1], product_scene_abbr[-1]
-    else:
-        raise NotImplementedError("Adapat the file patterns.")
+    raise NotImplementedError("Adapat the file patterns.")
+
 
 def _round_datetime_to_nearest_minute(time):
     """Round datetime time to nearest minute."""
@@ -399,31 +379,30 @@ def _round_datetime_to_nearest_minute(time):
 def _get_info_from_filename(fname):
     """Retrieve file information dictionary from filename."""
     from goes_api.listing import GLOB_FNAME_PATTERN
+
     # Infer sensor and product_level
     sensor = _infer_sensor(fname)
     product_level = _infer_product_level(fname)
-        
+
     # Retrieve file pattern
     fpattern = GLOB_FNAME_PATTERN[sensor][product_level]
-    
-    # Retrieve information from filename 
+
+    # Retrieve information from filename
     p = Parser(fpattern)
     info_dict = p.parse(fname)
-    
+
     # For sensor other than ABI, add scan_mode = ""
     if "scan_mode" not in info_dict:
         info_dict["scan_mode"] = ""
-    
+
     # Assert sensor and product_level are correct
-    assert sensor == info_dict['sensor']
-    assert product_level == info_dict['product_level']
-    
+    assert sensor == info_dict["sensor"]
+    assert product_level == info_dict["product_level"]
+
     # Special treatment for ABI L2 products
     if info_dict.get("product_scene_abbr") is not None:
         # Identify scene_abbr
-        product, scene_abbr = _separate_product_scene_abbr(
-            info_dict.get("product_scene_abbr")
-        )
+        product, scene_abbr = _separate_product_scene_abbr(info_dict.get("product_scene_abbr"))
         info_dict["product"] = product
         info_dict["scene_abbr"] = scene_abbr
         del info_dict["product_scene_abbr"]
@@ -434,36 +413,36 @@ def _get_info_from_filename(fname):
             channel = scan_mode_channel[2:]
             info_dict["scan_mode"] = scan_mode
             info_dict["channel"] = channel
-        
-    # Round start time 
+
+    # Round start time
     # - ABI to minutes ? (TODO: how to deal with 30s mesoscale !)
     # - GLM to seconds
     if info_dict["product"] == "ABI":
-        info_dict["start_time"] =  _round_datetime_to_nearest_minute(info_dict["start_time"]) 
-        info_dict["end_time"] =  _round_datetime_to_nearest_minute(info_dict["end_time"]) 
-            
-    # Special treatment for ABI products to retrieve sector 
-    if sensor == 'ABI':
-        if 'M' in info_dict["scene_abbr"]:
-            sector = 'M'
-        else: 
-            sector = info_dict["scene_abbr"] 
-        info_dict["sector"] =  sector   
-    
-    # Derive satellite name  
+        info_dict["start_time"] = _round_datetime_to_nearest_minute(info_dict["start_time"])
+        info_dict["end_time"] = _round_datetime_to_nearest_minute(info_dict["end_time"])
+
+    # Special treatment for ABI products to retrieve sector
+    if sensor == "ABI":
+        if "M" in info_dict["scene_abbr"]:
+            sector = "M"
+        else:
+            sector = info_dict["scene_abbr"]
+        info_dict["sector"] = sector
+
+    # Derive satellite name
     platform_shortname = info_dict["platform_shortname"]
-    if 'G16' == platform_shortname:
-        satellite = 'GOES-16'
-    elif 'G17' == platform_shortname:
-        satellite = 'GOES-17'
-    elif 'G18' == platform_shortname:
-         satellite = 'GOES-18'
-    elif 'G19' == platform_shortname:
-         satellite = 'GOES-19'
+    if platform_shortname == "G16":
+        satellite = "GOES-16"
+    elif platform_shortname == "G17":
+        satellite = "GOES-17"
+    elif platform_shortname == "G18":
+        satellite = "GOES-18"
+    elif platform_shortname == "G19":
+        satellite = "GOES-19"
     else:
         raise ValueError(f"Processing of satellite {platform_shortname} not yet implemented.")
-    info_dict["satellite"] =  satellite  
-        
+    info_dict["satellite"] = satellite
+
     # Return info dictionary
     return info_dict
 
@@ -480,9 +459,7 @@ def _get_key_from_filepaths(fpaths, key):
     """Extract specific key information from a list of filepaths."""
     if isinstance(fpaths, str):
         fpaths = [fpaths]
-    return [
-        _get_info_from_filepath(fpath)[key] for fpath in fpaths
-    ]
+    return [_get_info_from_filepath(fpath)[key] for fpath in fpaths]
 
 
 def get_key_from_filepaths(fpaths, key):
@@ -491,19 +468,17 @@ def get_key_from_filepaths(fpaths, key):
         fpaths = {k: _get_key_from_filepaths(v, key=key) for k, v in fpaths.items()}
     else:
         fpaths = _get_key_from_filepaths(fpaths, key=key)
-    return fpaths 
+    return fpaths
 
 
 ####---------------------------------------------------------------------------.
-#### Group filepaths 
+#### Group filepaths
 
 
 def _group_fpaths_by_key(fpaths, key="start_time"):
     """Utils function to group filepaths by key contained into filename."""
-    # - Retrieve key sorting index 
-    list_key_values = [
-        _get_info_from_filepath(fpath)[key] for fpath in fpaths
-    ]
+    # - Retrieve key sorting index
+    list_key_values = [_get_info_from_filepath(fpath)[key] for fpath in fpaths]
     idx_key_sorting = np.array(list_key_values).argsort()
     # - Sort fpaths and key_values by key values
     fpaths = np.array(fpaths)[idx_key_sorting]
@@ -512,7 +487,7 @@ def _group_fpaths_by_key(fpaths, key="start_time"):
     unique_key_values, cut_idx = np.unique(list_key_values, return_index=True)
     # - Split by key value
     fpaths_grouped = np.split(fpaths, cut_idx)[1:]
-    # - Convert array of fpaths into list of fpaths 
+    # - Convert array of fpaths into list of fpaths
     fpaths_grouped = [arr.tolist() for arr in fpaths_grouped]
     # - Create (key: files) dictionary
     fpaths_dict = dict(zip(unique_key_values, fpaths_grouped))
@@ -538,9 +513,10 @@ def group_files(fpaths, key="start_time"):
         Dictionary with structure {<key>: list_fpaths_with_<key>}.
 
     """
-    if isinstance(fpaths, dict): 
-        raise TypeError("It's not possible to group a dictionary ! Pass a list of filepaths instead.")
+    if isinstance(fpaths, dict):
+        raise TypeError(
+            "It's not possible to group a dictionary ! Pass a list of filepaths instead.",
+        )
     key = _check_group_by_key(key)
     fpaths_dict = _group_fpaths_by_key(fpaths=fpaths, key=key)
     return fpaths_dict
-

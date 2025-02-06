@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 # Copyright (c) 2022 Ghiggi Gionata
 
@@ -16,6 +15,7 @@
 # goes_api. If not, see <http://www.gnu.org/licenses/>.
 
 import xarray as xr
+
 from goes_api import find_latest_files
 
 # NOTE: For GOES performance benchmarks, check https://github.com/ghiggi/goes_benchmarks/
@@ -66,8 +66,9 @@ fpath = list(fpaths.values())[0][0]
 print(fpath)
 
 # - Open via bytesIO
-import requests
 from io import BytesIO
+
+import requests
 
 resp = requests.get(fpath)
 f_obj = BytesIO(resp.content)
@@ -154,8 +155,9 @@ ds = xr.open_dataset(fs.open(fpath), engine="h5netcdf")
 ds["Rad"].plot.imshow()
 
 # - Alternative 1 with in-memory buffer data (and close connection)
-import fsspec
 from io import BytesIO
+
+import fsspec
 
 fs = fsspec.filesystem("s3", anon=True)
 with fs.open(fpath, "rb") as f:
@@ -163,8 +165,9 @@ with fs.open(fpath, "rb") as f:
 ds["Rad"].plot.imshow()
 
 # - Alternative 2 with in-memory buffer data (and close connection)
-import fsspec
 from io import BytesIO
+
+import fsspec
 
 with fsspec.open(fpath, mode="rb", anon=True) as f:
     ds = xr.open_dataset(BytesIO(f.read()), engine="h5netcdf")
@@ -173,8 +176,8 @@ ds["Rad"].plot.imshow()
 ####---------------------------------------------------------------------------.
 #### Open file from s3 using ffspec and block-cache
 # - blockcache just download/read the required data !!!
-import fsspec.implementations.cached
 import appdirs
+import fsspec.implementations.cached
 
 cachedir = appdirs.user_cache_dir("ABI-block-cache")
 storage_options = {"anon": True}

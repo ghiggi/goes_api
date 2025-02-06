@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 # Copyright (c) 2022 Ghiggi Gionata
 
@@ -16,12 +15,13 @@
 # goes_api. If not, see <http://www.gnu.org/licenses/>.
 
 import datetime
+
 from goes_api import (
-    find_closest_start_time,
     download_files,
-    download_previous_files,
-    download_next_files,
     download_latest_files,
+    download_next_files,
+    download_previous_files,
+    find_closest_start_time,
 )
 
 ###---------------------------------------------------------------------------.

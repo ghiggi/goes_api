@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 # Copyright (c) 2022 Ghiggi Gionata
 
@@ -16,9 +15,10 @@
 # goes_api. If not, see <http://www.gnu.org/licenses/>.
 
 import fsspec
-from satpy import Scene, MultiScene
-from satpy.readers import FSFile
 from dask.diagnostics import ProgressBar
+from satpy import MultiScene, Scene
+from satpy.readers import FSFile
+
 from goes_api import find_latest_files
 
 ###---------------------------------------------------------------------------.
@@ -82,16 +82,16 @@ for timestep, fpaths in fpaths_dict.items():
 
     # - Use satpy
     scn = Scene(filenames=satpy_files, reader="abi_l1b")
-    
-    # - Load the channels  
-    scn.load(["C01","C02", "C03"])
-    
+
+    # - Load the channels
+    scn.load(["C01", "C02", "C03"])
+
     # - Resample chanels to common grid (default the highest resolution)
     scn = scn.resample(scn.finest_area(), resampler="native")
-    
-    # - Create the composite  
+
+    # - Create the composite
     scn.load(["true_color"])
-    
+
     # - Add to dictionary
     scn_dict[timestep] = scn
 
@@ -104,8 +104,10 @@ mscn = MultiScene(scn_dict.values())
 
 # - Create the animation
 with ProgressBar():
-    mscn.save_animation(filename="/tmp/{name}_{start_time:%Y%m%d_%H%M%S}.mp4",
-                        #dataset=['true_color'], # THIS CAUSE A SATPY BUG
-                        fps=5) # batch_size=4)
+    mscn.save_animation(
+        filename="/tmp/{name}_{start_time:%Y%m%d_%H%M%S}.mp4",
+        # dataset=['true_color'], # THIS CAUSE A SATPY BUG
+        fps=5,
+    )  # batch_size=4)
 
 ###---------------------------------------------------------------------------.

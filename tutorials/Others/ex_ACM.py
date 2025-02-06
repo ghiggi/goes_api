@@ -1,15 +1,16 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 """
 Created on Mon Apr 11 12:03:49 2022
 
 @author: ghiggi
 """
+from io import BytesIO
+
+import matplotlib.pyplot as plt
 import numpy as np
 import requests
 import xarray as xr
-from io import BytesIO
-import matplotlib.pyplot as plt
+
 from goes_api import find_latest_files
 
 ###---------------------------------------------------------------------------.
@@ -25,21 +26,21 @@ fs_args = {}
 satellite = "GOES-16"
 sensor = "ABI"
 product_level = "L2"
-product = "ACM"     
+product = "ACM"
 
 ###---------------------------------------------------------------------------.
 #### Define sector and filtering options
 sector = "F"
-scan_modes = None   # select all scan modes (M3, M4, M6)
-channels = None     # select all channels
-scene_abbr = None   
+scan_modes = None  # select all scan modes (M3, M4, M6)
+channels = None  # select all channels
+scene_abbr = None
 filter_parameters = {}
 filter_parameters["scan_modes"] = scan_modes
 filter_parameters["channels"] = channels
 filter_parameters["scene_abbr"] = scene_abbr
 
-#----------------------------------------------------------------------------.
-#### Open file using in-memory buffering via https requests  
+# ----------------------------------------------------------------------------.
+#### Open file using in-memory buffering via https requests
 fpaths = find_latest_files(
     protocol=protocol,
     fs_args=fs_args,
@@ -55,44 +56,43 @@ fpaths = find_latest_files(
 fpath = list(fpaths.values())[0][0]
 print(fpath)
 
-# - Open the dataset 
+# - Open the dataset
 resp = requests.get(fpath)
 f_obj = BytesIO(resp.content)
 ds = xr.open_dataset(f_obj)
 print(ds)
 
-# - Dataset Name 
+# - Dataset Name
 print(ds.title)
 
 # - Dataset Resolution
-print(ds.attrs["spatial_resolution"]) # 2 km at nadirs
+print(ds.attrs["spatial_resolution"])  # 2 km at nadirs
 
 # - Dataset Attributes
 print(ds.attrs["summary"])
 
-# - Dataset Variables 
+# - Dataset Variables
 print(list(ds.data_vars))
 
-# - DQF values  
-ds['DQF'].attrs["flag_values"]
-ds['DQF'].attrs["flag_meanings"]
-np.unique(ds["DQF"].data[~np.isnan(ds["DQF"].data)], return_counts=True)  
+# - DQF values
+ds["DQF"].attrs["flag_values"]
+ds["DQF"].attrs["flag_meanings"]
+np.unique(ds["DQF"].data[~np.isnan(ds["DQF"].data)], return_counts=True)
 
 # - Plot BCM mask (0-1)
-ds['BCM'].plot.imshow()
+ds["BCM"].plot.imshow()
 plt.show()
 
 # - Plot ACM mask (4 level cloud mask)
-ds['ACM'].attrs["flag_values"]
-ds['ACM'].attrs["flag_meanings"]
-ds['ACM'].plot.imshow()
+ds["ACM"].attrs["flag_values"]
+ds["ACM"].attrs["flag_meanings"]
+ds["ACM"].plot.imshow()
 plt.show()
 
 # - Plot Cloud_Probabilities field
-ds['Cloud_Probabilities'].plot.imshow()
+ds["Cloud_Probabilities"].plot.imshow()
 plt.show()
 
 # - Plot DQF
 ds["DQF"].plot.imshow()
 plt.show()
- 

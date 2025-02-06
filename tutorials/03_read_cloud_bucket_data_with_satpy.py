@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 # Copyright (c) 2022 Ghiggi Gionata
 
@@ -18,6 +17,7 @@
 import fsspec
 from satpy import Scene
 from satpy.readers import FSFile
+
 from goes_api import find_latest_files
 
 ###---------------------------------------------------------------------------.

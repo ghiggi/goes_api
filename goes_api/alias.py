@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-# -*- coding: utf-8 -*-
 
 # Copyright (c) 2022 Ghiggi Gionata
 
@@ -76,4 +75,3 @@ _channels = {
     "C15": ["C15", "15", "12.3", "DIRTY LONGWAVE WINDOW", "DIRTY IR"],
     "C16": ["C16", "16", "13.3", "CO2 IR LONGWAVE", "CO2", "CO2 IR"],
 }
-
