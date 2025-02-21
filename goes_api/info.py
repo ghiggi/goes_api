@@ -60,7 +60,18 @@ def get_available_online_product(protocol, satellite):
     list_products = [product[:-1] if product.startswith("ABI") else product for product in list_dirname]
     list_products = np.unique(list_products).tolist()
     # Retrieve sensor, product_level and product list
-    list_sensor_level_product = [product.split("-") for product in list_products]
+    # list_sensor_level_product = [product.split("-") for product in list_products]
+    list_sensor_level_product = []
+    for product in list_products:
+        p = product.split("-")
+        if len(p) == 3:
+            list_sensor_level_product.append(p)
+        elif len(p) == 4:
+            p[2] = p[2] + "-" + p[3]
+            list_sensor_level_product.append(p[0:3])
+        else:
+            pass
+
     # Build a dictionary
     products_dict = {}
     for sensor, product_level, product in list_sensor_level_product:
