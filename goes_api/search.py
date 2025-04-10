@@ -36,7 +36,7 @@ from goes_api.checks import (
 )
 from goes_api.configs import get_goes_base_dir
 from goes_api.filter import _filter_files
-from goes_api.info import group_files
+from goes_api.info import group_files, _get_info_from_filepath
 from goes_api.io import (
     _get_bucket_prefix,
     _get_product_dir,
@@ -298,6 +298,7 @@ def find_closest_start_time(
     protocol="file",
     fs_args={},
     filter_parameters={},
+    return_end_time=False,
 ):
     """
     Retrieve files start_time closest to the specified time.
@@ -374,7 +375,13 @@ def find_closest_start_time(
         raise ValueError(f"No data available in previous and next {dt_str} minutes around {time}.")
     idx_closest = np.argmin(np.abs(np.array(list_datetime) - time))
     datetime_closest = list_datetime[idx_closest]
-    return datetime_closest
+    if return_end_time:
+        filename = fpath_dict[datetime_closest][0]
+        # Get endtime from filename
+        endtime_closest = _get_info_from_filepath(filename)["end_time"]
+        return datetime_closest, endtime_closest
+    else:
+        return datetime_closest
 
 
 def find_latest_start_time(
