@@ -374,13 +374,13 @@ def find_closest_start_time(
         dt_str = int(timedelta.seconds / 60)
         raise ValueError(f"No data available in previous and next {dt_str} minutes around {time}.")
     idx_closest = np.argmin(np.abs(np.array(list_datetime) - time))
-    datetime_closest = list_datetime[idx_closest]
+    closest_start_time = list_datetime[idx_closest]
     if return_end_time:
-        filename = fpath_dict[datetime_closest][0]
+        filename = fpath_dict[closest_start_time][0]
         # Get endtime from filename
-        endtime_closest = _get_info_from_filepath(filename)["end_time"]
-        return datetime_closest, endtime_closest
-    return datetime_closest
+        closest_end_time = _get_info_from_filepath(filename)["end_time"]
+        return closest_start_time, closest_end_time
+    return closest_start_time
 
 
 def find_latest_start_time(
@@ -771,7 +771,7 @@ def find_previous_files(
     start_time = _check_time(start_time)
     start_time = start_time.replace(microsecond=0, second=0)
     # Get closest time and check is as start_time (otherwise warning)
-    closest_time = find_closest_start_time(
+    closest_start_time = find_closest_start_time(
         time=start_time,
         base_dir=base_dir,
         protocol=protocol,
@@ -784,15 +784,16 @@ def find_previous_files(
         filter_parameters=filter_parameters,
     )
     # Check start_time is the precise start_time of the file
-    if operational_checks and closest_time != start_time:
+    if operational_checks and closest_start_time != start_time:
         raise ValueError(
-            f"start_time='{start_time}' is not an actual start_time. " f"The closest start_time is '{closest_time}'",
+            f"start_time='{start_time}' is not an actual start_time. "
+            f"The closest start_time is '{closest_start_time}'",
         )
     # Retrieve timedelta conditioned to sector type
     timedelta = _get_acquisition_max_timedelta(sector)
     # Define start_time and end_time
-    start_time = closest_time - timedelta * (N + 1)  # +1 for when include_start_time=False
-    end_time = closest_time
+    start_time = closest_start_time - timedelta * (N + 1)  # +1 for when include_start_time=False
+    end_time = closest_start_time
     # Retrieve files
     fpath_dict = find_files(
         base_dir=base_dir,
@@ -815,7 +816,7 @@ def find_previous_files(
     list_datetime = sorted(list(fpath_dict.keys()))
     # Remove start_time if include_start_time=False
     if not include_start_time:
-        list_datetime.remove(closest_time)
+        list_datetime.remove(closest_start_time)
     list_datetime = sorted(list_datetime)
     # Check data availability
     if len(list_datetime) == 0:
@@ -923,7 +924,7 @@ def find_next_files(
     start_time = _check_time(start_time)
     start_time = start_time.replace(microsecond=0, second=0)
     # Get closest time and check is as start_time (otherwise warning)
-    closest_time = find_closest_start_time(
+    closest_start_time = find_closest_start_time(
         time=start_time,
         base_dir=base_dir,
         protocol=protocol,
@@ -936,15 +937,16 @@ def find_next_files(
         filter_parameters=filter_parameters,
     )
     # Check start_time is the precise start_time of the file
-    if operational_checks and closest_time != start_time:
+    if operational_checks and closest_start_time != start_time:
         raise ValueError(
-            f"start_time='{start_time}' is not an actual start_time. " f"The closest start_time is '{closest_time}'",
+            f"start_time='{start_time}' is not an actual start_time. "
+            f"The closest start_time is '{closest_start_time}'",
         )
     # Retrieve timedelta conditioned to sector type
     timedelta = _get_acquisition_max_timedelta(sector)
     # Define start_time and end_time
-    start_time = closest_time
-    end_time = closest_time + timedelta * (N + 1)  # +1 for when include_start_time=False
+    start_time = closest_start_time
+    end_time = closest_start_time + timedelta * (N + 1)  # +1 for when include_start_time=False
     # Retrieve files
     fpath_dict = find_files(
         base_dir=base_dir,
@@ -966,7 +968,7 @@ def find_next_files(
     # List previous datetime
     list_datetime = sorted(list(fpath_dict.keys()))
     if not include_start_time:
-        list_datetime.remove(closest_time)
+        list_datetime.remove(closest_start_time)
     list_datetime = sorted(list_datetime)
     # Check data availability
     if len(list_datetime) == 0:

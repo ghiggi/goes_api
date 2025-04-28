@@ -516,7 +516,7 @@ def download_closest_files(
     # Checks
     _check_download_protocol(protocol)
     # Get closest time
-    closest_time, closest_end_time = find_closest_start_time(
+    closest_start_time, closest_end_time = find_closest_start_time(
         time=time,
         base_dir=None,
         protocol=protocol,
@@ -540,7 +540,7 @@ def download_closest_files(
         product=product,
         sector=sector,
         filter_parameters=filter_parameters,
-        start_time=closest_time,
+        start_time=closest_start_time,
         end_time=closest_end_time,
         n_threads=n_threads,
         force_download=force_download,
