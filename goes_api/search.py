@@ -81,7 +81,7 @@ def _enable_multiple_products(func):
         # Multiproduct case
         if isinstance(kwargs["product"], list):
             products = kwargs["product"]
-            group_by_key = kwargs.get("group_by_key", None)
+            group_by_key = kwargs.get("group_by_key")
             operational_checks = kwargs.get("operational_checks", True)
             list_fpaths = []
             for product in products:
