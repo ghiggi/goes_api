@@ -4,6 +4,7 @@ Created on Tue Apr 26 12:13:15 2022
 
 @author: ghiggi
 """
+
 import fsspec
 from satpy import Scene
 from satpy.readers import FSFile
