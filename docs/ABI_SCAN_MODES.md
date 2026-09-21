@@ -7,14 +7,14 @@ Mode 3 (GOES16, GOES17)
 - Default operational mode till April 2, 2019
 - FULL DISK every 15 minutes
 - CONUS/PACUS every 5 minutes
-- Mesoscale every 1 minutes  (TODO: when 30 seconds)
+- Mesoscale every 1 minutes (TODO: when 30 seconds)
 
-Mode 6 (difference between GOES-16  and GOES-17)
+Mode 6 (difference between GOES-16 and GOES-17)
 
 - Default operational mode till since April 2, 2019
 - FULL DISK every 10 minutes
 - CONUS/PACUS every 5 minutes
-- Mesoscale every 1 minutes  (TODO: when 30 seconds)
+- Mesoscale every 1 minutes (TODO: when 30 seconds)
 
 Mode 4
 

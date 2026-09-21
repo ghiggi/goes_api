@@ -4,6 +4,7 @@ Created on Thu Mar 24 14:33:48 2022
 
 @author: ghiggi
 """
+
 from io import BytesIO
 
 import requests
