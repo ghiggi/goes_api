@@ -4,6 +4,7 @@ Created on Tue Apr 26 10:22:39 2022
 
 @author: ghiggi
 """
+
 import xarray as xr
 
 from goes_api import find_latest_files
