@@ -2,7 +2,7 @@
 
 GOES-16 (GOES-R)
 
-- November 30 - December 11 2017: Drifting from 89.5 °W to the GOES-East operational location (75.2° W)   \[todo: check if 89.5 is correct\]
+- November 30 - December 11 2017: Drifting from 89.5 °W to the GOES-East operational location (75.2° W) [todo: check if 89.5 is correct]
 - Nominal operation resumed on December 18, 2017
 - Declared GOES-EAST on December 18, 2017
 - Biased IR bands before June 19, 2018
@@ -62,7 +62,7 @@ Calibration event log
 
 Precomputed angles/latlon
 
-- https://www.star.nesdis.noaa.gov/pub/smcd/spb/fwu/tmp/latlon_angle/  (lon=-135.0 deg) and East (lon=-75.0)
+- https://www.star.nesdis.noaa.gov/pub/smcd/spb/fwu/tmp/latlon_angle/ (lon=-135.0 deg) and East (lon=-75.0)
 
 GOES weighting functions
 
@@ -142,7 +142,7 @@ The L2 Cloud and Moisture Imagery (MCMIP) products contains all the 16 spectral 
 ## ABI Raw Data
 
 Data are saved as 16-bit scaled integers, rather than 32-bit floating point values.
-To unpack:  unpacked_value = packed_value * scale_factor + add_offset
+To unpack: unpacked_value = packed_value * scale_factor + add_offset
 To pack: packed_value = (unpacked_value - add_offset) / scale_factor
 --> The scale factor is calculated with the formula (Max Value - Min Value)/65530
 
@@ -202,7 +202,7 @@ Oracle cloud storage
 
 - https://opendata.oraclecloud.com/ords/r/opendata/opendata/details?data_set_id=2&clear=CR,8&session=2142808942446
 
-Microsoft West Europe Azure Blob Storage  (only limited products)
+Microsoft West Europe Azure Blob Storage (only limited products)
 
 - https://planetarycomputer.microsoft.com/dataset/goes-cmi
 - https://planetarycomputer.microsoft.com/dataset/goes-cmi#Storage-Documentation
@@ -216,7 +216,7 @@ Microsoft West Europe Azure Blob Storage  (only limited products)
 - [fsspec](https://github.com/fsspec)
 - [s3fs](https://s3fs.readthedocs.io/en/latest/) (via boto3)
 - [gcsfs](https://gcsfs.readthedocs.io/en/latest/index.html)
-- [adlfs](https://github.com/fsspec/adlfs)  (via azure.storage.blob ???)
+- [adlfs](https://github.com/fsspec/adlfs) (via azure.storage.blob ???)
 
 ## Example cloud bucket url
 

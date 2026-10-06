@@ -4,6 +4,7 @@ Created on Tue Dec 20 16:45:14 2022
 
 @author: ghiggi
 """
+
 import numpy as np
 
 from goes_api.info import get_key_from_filepaths, group_files

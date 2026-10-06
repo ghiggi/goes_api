@@ -4,6 +4,7 @@ Created on Thu Mar 24 10:59:46 2022
 
 @author: ghiggi
 """
+
 from io import BytesIO
 
 import cartopy
