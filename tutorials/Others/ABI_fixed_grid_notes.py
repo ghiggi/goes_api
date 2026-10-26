@@ -4,6 +4,7 @@ Created on Tue Jul 19 11:32:08 2022
 
 @author: ghiggi
 """
+
 ####--------------------------------------------------------------------------.
 #### Define GEOS AreaDefinition from fixed position
 # - GOES16 definition took from https://github.com/pytroll/satpy/blob/main/satpy/etc/areas.yaml#L443
