@@ -4,6 +4,7 @@ Created on Wed Mar 30 17:23:36 2022
 
 @author: ghiggi
 """
+
 from io import BytesIO
 
 import matplotlib.pyplot as plt
