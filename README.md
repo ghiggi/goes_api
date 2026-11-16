@@ -9,7 +9,7 @@
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/ambv/black)
 [![License](https://img.shields.io/github/license/ghiggi/goes_api)](https://github.com/ghiggi/goes_api/blob/master/LICENSE)
 
-The GOES-API is still in development. 
+The GOES-API is still in development.
 Feel free to try it out and to report issues or to suggest changes.
 
 ## Quickstart
@@ -69,4 +69,3 @@ The content of this repository is released under the terms of the [MIT](LICENSE)
 [`kerchunk_data.ipynb`]: https://github.com/ghiggi/goes_api/blob/main/tutorials/04_kerchunk_dataset.py
 [`read_bucket_data.ipynb`]: https://github.com/ghiggi/goes_api/blob/main/tutorials/03_read_cloud_bucket_data.py
 [`read_bucket_data_with_satpy.ipynb`]: https://github.com/ghiggi/goes_api/blob/main/tutorials/03_read_cloud_bucket_data_with_satpy.py
-
